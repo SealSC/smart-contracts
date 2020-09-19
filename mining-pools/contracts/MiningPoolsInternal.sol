@@ -49,16 +49,25 @@ contract MiningPoolsInternal is MiningPoolsData {
             return 0;
         }
 
+        if(to <= from) {
+            return 0;
+        }
+
         uint256 decreaseBegin = 0;
+        uint256 totalDecreased = 0;
+
+        uint256 maxDiff = rewardPerBlock.sub(minRewardPerBlock);
+        uint256 maxDecreaseSteps = rewardPerBlock.sub(minRewardPerBlock).div(rewardDecreaseUnit);
+        uint256 targetEnd = to.sub(rewardDecreaseBegin).div(rewardDecreaseStep);
+
         if(from > rewardDecreaseBegin) {
             decreaseBegin = from.sub(rewardDecreaseBegin).div(rewardDecreaseStep);
         }
 
-        uint256 maxDecreaseSteps = rewardPerBlock.sub(minRewardPerBlock).div(rewardDecreaseUnit);
-        uint256 targetEnd = to.sub(rewardDecreaseBegin).div(rewardDecreaseStep);
-
-        uint256 totalDecreased = 0;
-        uint256 maxDiff = rewardPerBlock.sub(minRewardPerBlock);
+        if(decreaseBegin >= maxDecreaseSteps) {
+            totalDecreased = maxDiff.mul(maxDecreaseSteps.mul(rewardDecreaseUnit));
+            return totalDecreased;
+        }
 
         if(targetEnd > maxDecreaseSteps) {
             totalDecreased = maxDiff.mul(targetEnd.sub(maxDecreaseSteps).mul(rewardDecreaseStep));
