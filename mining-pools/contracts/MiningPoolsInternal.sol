@@ -65,7 +65,7 @@ contract MiningPoolsInternal is MiningPoolsData {
         }
 
         if(decreaseBegin >= maxDecreaseSteps) {
-            totalDecreased = maxDiff.mul(maxDecreaseSteps.mul(rewardDecreaseUnit));
+            totalDecreased = maxDiff.mul(maxDecreaseSteps.add(1)).div(2);
             return totalDecreased;
         }
 
