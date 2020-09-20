@@ -20,8 +20,8 @@ contract MineableToken is IMineableToken, ERC20, ERC20Detailed, Ownable {
 
     public ERC20Detailed(_name, _symbol, _decimals) Ownable(_owner){
         minters[_minter] = _minter;
-        setTotalSupplyCap(_initSupply);
         admin = _admin;
+        setTotalSupplyCap(_initSupply);
     }
 
     mapping(address=>address) public minters;
