@@ -43,6 +43,7 @@ contract MiningPoolsData {
     address public team;
     uint256 public lastTotalSupplyWithoutTeam;
     uint256 public teamRewarded;
+    bool public teamRewardPermanentlyDisabled = false;
 
     bool public globalOpen = true;
     uint256 public globalStartBlock  = ~uint256(0);

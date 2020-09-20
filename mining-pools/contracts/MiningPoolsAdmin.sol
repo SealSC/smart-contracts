@@ -30,6 +30,10 @@ contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
         return (address(0) != administrators[_admin]);
     }
 
+    function disableTeamRewardPermanently() public onlyAdmin {
+        teamRewardPermanentlyDisabled = true;
+    }
+
     function setPoolsCap(uint256 cap) public onlyAdmin {
         require(cap > rewardCap);
         rewardCap = cap;
@@ -116,6 +120,7 @@ contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
 
     function mintToTeam() public {
         require (msg.sender == team || isAdmin(msg.sender), "not team or admin");
+        require (!teamRewardPermanentlyDisabled, "no team reward");
 
         uint256 totalAmount = rewardToken.totalSupply();
         uint256 thisSupplyWithoutTeam = totalAmount.sub(teamRewarded);
