@@ -13,10 +13,22 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
     using SafeMath for uint256;
     using Address for address payable;
 
-    constructor(address _owner, address _admin, address _token, uint256 _rewardPerBlock)
+    constructor(
+        address _owner,
+        address _admin,
+        address _token,
+        uint256 _rewardPerBlock,
+        bool _checkRewardDecimals,
+        uint256 _rewardIntegerPart)
     public Ownable(_owner) {
+
         rewardToken = IMineableToken(_token);
         rewardPerBlock = _rewardPerBlock;
+
+        if(_checkRewardDecimals) {
+            uint256 noDecimalsReward = _rewardPerBlock.div(10 ** uint256(rewardToken.decimals()));
+            require(noDecimalsReward == _rewardIntegerPart, "invalid decimals for reward setting");
+        }
         administrators[_admin] = _admin;
     }
 
