@@ -270,4 +270,31 @@ contract MiningPoolsInternal is MiningPoolsData {
             _updatePool(pool);
         }
     }
+
+    function _deposit(uint256 pid, UserInfo storage user, uint256 amount) internal {
+        PoolInfo storage pool = pools[pid];
+        require(pool.billingCycle > 0, "no such pool");
+        require(!pool.closed, "closed pool");
+        require(address(pool.stakingToken) != INIT_ADDRESS, "stake token not set");
+
+        if(address(0) == address(pool.stakingToken)) {
+            amount = msg.value;
+        }
+
+        (bool valid, string memory errInfo) = _canDeposit(pool, amount);
+        require(valid, errInfo);
+
+        if(address(0) != address(pool.stakingToken)) {
+            pool.stakingToken.transferFrom(msg.sender, address(this), amount);
+        }
+
+        _updatePool(pool);
+        if (user.stakeIn > 0) {
+            uint256 willCollect = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
+            user.willCollect = user.willCollect.add(willCollect);
+        }
+        pool.staked = pool.staked.add(amount);
+        user.stakeIn = user.stakeIn.add(amount);
+        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(precision);
+    }
 }

@@ -32,33 +32,16 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         administrators[_admin] = _admin;
     }
 
+    function depositByContract(uint256 _pid, uint256 _amount, address _forUser) public payable {
+        require(msg.sender.isContract(), "this interface only for contract call");
+        UserInfo storage user = users[_pid][_forUser];
+        _deposit(_pid, user, _amount);
+    }
+
     function deposit(uint256 _pid, uint256 _amount) public payable {
-        PoolInfo storage pool = pools[_pid];
+        require(!msg.sender.isContract(), "this interface only for EOA call");
         UserInfo storage user = users[_pid][msg.sender];
-
-        require(pool.billingCycle > 0, "no such pool");
-        require(!pool.closed, "closed pool");
-        require(address(pool.stakingToken) != INIT_ADDRESS, "stake token not set");
-
-        if(address(0) == address(pool.stakingToken)) {
-            _amount = msg.value;
-        }
-
-        (bool valid, string memory errInfo) = _canDeposit(pool, _amount);
-        require(valid, errInfo);
-
-        if(address(0) != address(pool.stakingToken)) {
-            pool.stakingToken.transferFrom(msg.sender, address(this), _amount);
-        }
-
-        _updatePool(pool);
-        if (user.stakeIn > 0) {
-            uint256 willCollect = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
-            user.willCollect = user.willCollect.add(willCollect);
-        }
-        pool.staked = pool.staked.add(_amount);
-        user.stakeIn = user.stakeIn.add(_amount);
-        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(precision);
+        _deposit(_pid, user, _amount);
     }
 
     function collect(uint256 _pid, uint256 _withdrawAmount) public {
