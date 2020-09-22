@@ -16,13 +16,15 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
     constructor(
         address _owner,
         address _admin,
-        address _token,
+        address _rewardToken,
+        address _rewardSupplier,
         uint256 _rewardPerBlock,
         bool _checkRewardDecimals,
         uint256 _rewardIntegerPart)
     public Ownable(_owner) {
 
-        rewardToken = IMineableToken(_token);
+        rewardToken = IMineableToken(_rewardToken);
+        rewardSupplier = IERC20TokenSupplier(_rewardSupplier);
         rewardPerBlock = _rewardPerBlock;
 
         if(_checkRewardDecimals) {
@@ -32,8 +34,10 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         administrators[_admin] = _admin;
     }
 
-    function depositByContract(uint256 _pid, uint256 _amount, address _forUser) public payable {
+    function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) public payable {
         require(msg.sender.isContract(), "this interface only for contract call");
+        require(!_forUser.isContract(), "reward user must not be a contract");
+
         UserInfo storage user = users[_pid][_forUser];
         _deposit(_pid, user, _amount);
     }
@@ -64,7 +68,12 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         uint256 userReward  = user.willCollect;
         uint256 stillNeed = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
-        rewardToken.mint(msg.sender, userReward);
+
+        if(IERC20TokenSupplier(0) != rewardSupplier) {
+            rewardSupplier.mint(address(rewardToken), msg.sender, userReward);
+        } else {
+            rewardToken.mint(msg.sender, userReward);
+        }
 
         user.willCollect = 0;
         user.stakeIn = user.stakeIn.sub(_withdrawAmount);

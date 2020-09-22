@@ -1,35 +1,17 @@
 pragma solidity ^0.5.6;
 
-import "./IERC20.sol";
 import "./IMineableToken.sol";
 import "./IMigrator.sol";
+import "./IMiningPools.sol";
+import "./IERC20TokenSupplier.sol";
 
-contract MiningPoolsData {
-    struct PoolInfo {
-        IERC20 stakingToken;
-        uint256 startBlock;
-        uint256 endBlock;
-        uint256 billingCycle;
-        uint256 weight;
-        uint256 staked;
-        uint256 lastRewardBlock;
-        uint256 rewardPerShare;
-        uint256 minStakeIn;
-        uint256 maxStakeIn;
-        bool closed;
-    }
-
-    struct UserInfo {
-        uint256 stakeIn;
-        uint256 rewardDebt;
-        uint256 willCollect;
-        uint256 lastCollectPosition;
-    }
-
+contract MiningPoolsData is MiningPoolsInterface {
     PoolInfo[] public pools;
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 
     IMineableToken public rewardToken;
+    IERC20TokenSupplier public rewardSupplier;
+
     uint256 public rewardPerBlock;
     uint256 public minRewardPerBlock;
 
