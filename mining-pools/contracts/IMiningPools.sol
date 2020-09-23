@@ -2,7 +2,7 @@ pragma solidity ^0.5.9;
 
 import "./IERC20.sol";
 
-interface MiningPoolsInterface {
+interface IMiningPools {
     struct PoolInfo {
         IERC20 stakingToken;
         uint256 startBlock;
@@ -27,4 +27,6 @@ interface MiningPoolsInterface {
     function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) external payable;
     function deposit(uint256 _pid, uint256 _amount) external payable;
     function collect(uint256 _pid, uint256 _withdrawAmount) external;
+
+    function getPoolStakingToken(uint256 _pid) view external returns(address);
 }

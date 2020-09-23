@@ -5,7 +5,7 @@ import "./IMigrator.sol";
 import "./IMiningPools.sol";
 import "./IERC20TokenSupplier.sol";
 
-contract MiningPoolsData is MiningPoolsInterface {
+contract MiningPoolsData is IMiningPools {
     PoolInfo[] public pools;
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 

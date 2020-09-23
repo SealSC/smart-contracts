@@ -1,6 +1,5 @@
 pragma solidity ^0.5.9;
 
-import "./MiningPoolsData.sol";
 import "./SafeMath.sol";
 import "./Address.sol";
 

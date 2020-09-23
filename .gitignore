@@ -211,10 +211,10 @@ typings/
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 
-# Next.js build output
+# Next.js temp output
 .next
 
-# Nuxt.js build / generate output
+# Nuxt.js temp / generate output
 .nuxt
 dist
 
@@ -224,7 +224,7 @@ dist
 # https://nextjs.org/blog/next-9-1#public-directory-support
 # public
 
-# vuepress build output
+# vuepress temp output
 .vuepress/dist
 
 # Serverless directories
@@ -268,3 +268,4 @@ package-lock.json
 
 .idea
 mining-pools/build
+temp

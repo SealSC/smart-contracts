@@ -55,4 +55,8 @@ contract MiningPoolsViews is MiningPoolsInternal {
 
         return userReward;
     }
+
+    function getPoolStakingToken(uint256 _pid) view external returns(address) {
+        return address(pools[_pid].stakingToken);
+    }
 }

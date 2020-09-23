@@ -1,7 +1,6 @@
 pragma solidity ^0.5.9;
 
 import "./IMigrator.sol";
-import "./MiningPoolsData.sol";
 import "./Ownable.sol";
 import "./SafeMath.sol";
 
