@@ -3,7 +3,7 @@ pragma solidity ^0.5.6;
 import "./IMineableToken.sol";
 import "./IMigrator.sol";
 import "./IMiningPools.sol";
-import "./IERC20TokenSupplier.sol";
+import "../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.sol";
 
 contract MiningPoolsData is IMiningPools {
     PoolInfo[] public pools;

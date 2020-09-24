@@ -1,8 +1,8 @@
 pragma solidity ^0.5.9;
 
-import "./Ownable.sol";
-import "./IERC20.sol";
-import "./SafeMath.sol";
+import "../../contract-libs/open-zeppelin/Ownable.sol";
+import "../../contract-libs/open-zeppelin/IERC20.sol";
+import "../../contract-libs/open-zeppelin/SafeMath.sol";
 
 contract ERC20TokenSupplier is Ownable {
     using SafeMath for uint256;
