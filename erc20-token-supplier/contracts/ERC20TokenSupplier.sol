@@ -1,13 +1,16 @@
 pragma solidity ^0.5.9;
 
 import "../../contract-libs/open-zeppelin/Ownable.sol";
-import "../../contract-libs/open-zeppelin/IERC20.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
+import "../../contract-libs/open-zeppelin/IERC20.sol";
+import "../../mineable-erc20/contracts/interface/IMineableERC20.sol";
+import "./interface/IERC20TokenSupplier.sol";
+import "../../contract-libs/seal-sc/Constants.sol";
 
-contract ERC20TokenSupplier is Ownable {
+contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants {
     using SafeMath for uint256;
 
-    mapping(address=>IERC20) public tokens;
+    mapping(address=>TokenInfo) public tokens;
     address[] public tokenArray;
 
     mapping(address=>bool) public consumers;
@@ -23,10 +26,11 @@ contract ERC20TokenSupplier is Ownable {
     }
 
     function getTokenSupply(address _token) external view returns(uint256) {
-        require(IERC20(0) != tokens[_token], "not supported yet");
+        require(tokens[_token].token != ZERO_ADDRESS, "not supported yet");
 
-        IERC20 token = tokens[_token];
-        return token.balanceOf(address(this));
+        TokenInfo memory ti = tokens[_token];
+        return (SupplyMode.Transfer == ti.supplyMode)  ?
+                    IMineableERC20(ti.token).balanceOf(address(this)) : IERC20(ti.token).totalSupply();
     }
 
     function addConsumer(address _consumer) external onlyOwner {
@@ -37,24 +41,43 @@ contract ERC20TokenSupplier is Ownable {
         delete consumers[_consumer];
     }
 
-    function addToken(address _token) external onlyOwner{
-        tokens[_token] = IERC20(_token);
-        tokenArray.push(_token);
+    function addToken(address _token, uint256 mode) external onlyOwner{
+        TokenInfo memory ti = TokenInfo({
+            token: _token,
+            supplyMode: SupplyMode(mode)
+        });
+
+        tokens[_token] = ti;
+    }
+
+    function _supplyByTransfer(TokenInfo memory ti, address to, uint256 amount) internal returns(uint256) {
+        IERC20 token = IERC20(ti.token);
+        uint256 supplyBeforeMint = token.balanceOf(address(this));
+
+        if(supplyBeforeMint < amount) {
+            amount = supplyBeforeMint;
+        }
+        token.transfer(to, amount);
+
+        uint256 supplyAfterMint = token.balanceOf(address(this));
+        return supplyBeforeMint.sub(supplyAfterMint);
+    }
+
+    function _supplyByMint(TokenInfo memory ti, address to, uint256 amount) internal returns(uint256) {
+        IMineableERC20 token = IMineableERC20(ti.token);
+        uint256 supplyBeforeMint = token.balanceOf(to);
+
+        token.mint(to, amount);
+
+        uint256 supplyAfterMint = token.balanceOf(to);
+        return supplyBeforeMint.sub(supplyAfterMint);
     }
 
     function mint(address _token, address _to, uint256 _amount) external onlyConsumer returns(uint256) {
-        IERC20 token = tokens[_token];
-        require(token != IERC20(0), "no such token");
+        TokenInfo memory ti = tokens[_token];
+        require(ti.token != ZERO_ADDRESS, "no such token");
 
-        uint256 supplyBeforeMint = token.balanceOf(address(this));
-
-        uint256 amountToMint = _amount;
-        if(supplyBeforeMint < amountToMint) {
-            amountToMint = supplyBeforeMint;
-        }
-        token.transfer(_to, amountToMint);
-        uint256 supplyAfterMint = token.balanceOf(address(this));
-
-        return supplyBeforeMint.sub(supplyAfterMint);
+        return (SupplyMode.Transfer == ti.supplyMode) ?
+                    _supplyByTransfer(ti, _to, _amount) : _supplyByMint(ti, _to, _amount);
     }
 }
