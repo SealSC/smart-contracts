@@ -2,6 +2,7 @@ pragma solidity ^0.5.9;
 
 import "./SafeMath.sol";
 import "./Address.sol";
+import "./MiningPoolsData.sol";
 
 contract MiningPoolsInternal is MiningPoolsData {
     using SafeMath for uint256;
@@ -278,6 +279,8 @@ contract MiningPoolsInternal is MiningPoolsData {
 
         if(address(0) == address(pool.stakingToken)) {
             amount = msg.value;
+        } else {
+            require(msg.value != 0, "erc20 token staking not accept ETH in.");
         }
 
         (bool valid, string memory errInfo) = _canDeposit(pool, amount);

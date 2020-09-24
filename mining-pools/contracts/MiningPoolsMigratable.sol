@@ -3,6 +3,7 @@ pragma solidity ^0.5.9;
 import "./IMigrator.sol";
 import "./Ownable.sol";
 import "./SafeMath.sol";
+import "./MiningPoolsData.sol";
 
 contract MiningPoolsMigratable is Ownable, MiningPoolsData {
     using SafeMath for uint256;
