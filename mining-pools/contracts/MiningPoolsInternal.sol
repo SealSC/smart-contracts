@@ -1,7 +1,7 @@
 pragma solidity ^0.5.9;
 
-import "./SafeMath.sol";
-import "./Address.sol";
+import "../../contract-libs/open-zeppelin/SafeMath.sol";
+import "../../contract-libs/open-zeppelin/Address.sol";
 import "./MiningPoolsData.sol";
 
 contract MiningPoolsInternal is MiningPoolsData {

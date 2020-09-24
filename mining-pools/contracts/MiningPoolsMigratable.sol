@@ -1,8 +1,8 @@
 pragma solidity ^0.5.9;
 
+import "../../contract-libs/open-zeppelin/Ownable.sol";
+import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "./IMigrator.sol";
-import "./Ownable.sol";
-import "./SafeMath.sol";
 import "./MiningPoolsData.sol";
 
 contract MiningPoolsMigratable is Ownable, MiningPoolsData {

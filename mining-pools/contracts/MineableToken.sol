@@ -1,7 +1,7 @@
 pragma solidity ^0.5.9;
 
-import "./ERC20.sol";
-import "./ERC20Detailed.sol";
+import "../../contract-libs/open-zeppelin/ERC20.sol";
+import "../../contract-libs/open-zeppelin/ERC20Detailed.sol";
 import "./IMineableToken.sol";
 
 contract MineableToken is IMineableToken, ERC20, ERC20Detailed, Ownable {

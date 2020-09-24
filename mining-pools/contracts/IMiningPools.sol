@@ -1,6 +1,6 @@
 pragma solidity ^0.5.9;
 
-import "./IERC20.sol";
+import "../../contract-libs/open-zeppelin/IERC20.sol";
 
 interface IMiningPools {
     struct PoolInfo {

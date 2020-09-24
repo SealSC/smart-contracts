@@ -1,9 +1,9 @@
 pragma solidity ^0.5.9;
 
-import "./SafeMath.sol";
+import "../../contract-libs/open-zeppelin/SafeMath.sol";
+import "../../contract-libs/open-zeppelin/Ownable.sol";
+import "../../contract-libs/open-zeppelin/Address.sol";
 import "./IMigrator.sol";
-import "./Ownable.sol";
-import "./Address.sol";
 import "./IMineableToken.sol";
 import "./MiningPoolsAdmin.sol";
 import "./MiningPoolsMigratable.sol";

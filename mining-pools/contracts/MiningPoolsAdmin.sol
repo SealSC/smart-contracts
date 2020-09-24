@@ -1,6 +1,6 @@
 pragma solidity ^0.5.9;
 
-import "./Ownable.sol";
+import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "./MiningPoolsInternal.sol";
 
 contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
