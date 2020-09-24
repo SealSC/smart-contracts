@@ -6,10 +6,10 @@ import "./MiningPoolsInternal.sol";
 contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
     using SafeMath for uint256;
 
-    mapping(address=>address) public administrators;
+    mapping(address=>address) public admins;
 
     modifier onlyAdmin() {
-        require(address(0) != administrators[msg.sender], "caller is not the administrator");
+        require(address(0) != admins[msg.sender], "caller is not the administrator");
         _;
     }
 
@@ -18,25 +18,20 @@ contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
         _;
     }
 
-    function addAdministrator(address _admin) public onlyAdmin {
-        administrators[_admin] = _admin;
+    function addAdmin(address _admin) public onlyOwner {
+        admins[_admin] = _admin;
     }
 
-    function removeAdministrator(address _admin) public onlyAdmin {
-        delete administrators[_admin];
+    function removeAdmin(address _admin) public onlyOwner {
+        delete admins[_admin];
     }
 
     function isAdmin(address _admin) public view returns(bool) {
-        return (address(0) != administrators[_admin]);
+        return (address(0) != admins[_admin]);
     }
 
     function disableTeamRewardPermanently() public onlyAdmin {
         teamRewardPermanentlyDisabled = true;
-    }
-
-    function setPoolsCap(uint256 cap) public onlyAdmin {
-        require(cap > rewardCap);
-        rewardCap = cap;
     }
 
     function addPool(
@@ -81,7 +76,7 @@ contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
 
     function setPoolStakeToken(uint256 _pid, address _token) public onlyAdmin {
         PoolInfo storage pool = pools[_pid];
-        require(address(pool.stakingToken) == INIT_ADDRESS, "address already set");
+        require(address(pool.stakingToken) == DUMMY_ADDRESS, "address already set");
 
         pool.stakingToken = IERC20(_token);
     }
@@ -122,11 +117,11 @@ contract MiningPoolsAdmin is Ownable, MiningPoolsInternal {
         require (msg.sender == team || isAdmin(msg.sender), "not team or admin");
         require (!teamRewardPermanentlyDisabled, "no team reward");
 
-        uint256 totalAmount = rewardToken.totalSupply();
+        uint256 totalAmount = rewardSupplier.getTokenSupply(mainRewardToken);
         uint256 thisSupplyWithoutTeam = totalAmount.sub(teamRewarded);
         uint256 rewardToCollect = thisSupplyWithoutTeam.sub(lastTotalSupplyWithoutTeam).div(10);
 
-        rewardToken.mint(team, rewardToCollect);
+        rewardSupplier.mint(mainRewardToken, team, rewardToCollect);
         lastTotalSupplyWithoutTeam = thisSupplyWithoutTeam;
         teamRewarded = teamRewarded.add(rewardToCollect);
     }

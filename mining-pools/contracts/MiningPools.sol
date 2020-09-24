@@ -3,8 +3,7 @@ pragma solidity ^0.5.9;
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/Address.sol";
-import "./IMigrator.sol";
-import "./IMineableToken.sol";
+import "./interface/IMigrator.sol";
 import "./MiningPoolsAdmin.sol";
 import "./MiningPoolsMigratable.sol";
 import "./MiningPoolsViews.sol";
@@ -16,22 +15,23 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
     constructor(
         address _owner,
         address _admin,
-        address _rewardToken,
+        address _mainRewardToken,
         address _rewardSupplier,
         uint256 _rewardPerBlock,
         bool _checkRewardDecimals,
         uint256 _rewardIntegerPart)
     public Ownable(_owner) {
 
-        rewardToken = IMineableToken(_rewardToken);
+        mainRewardToken = _mainRewardToken;
         rewardSupplier = IERC20TokenSupplier(_rewardSupplier);
         rewardPerBlock = _rewardPerBlock;
 
         if(_checkRewardDecimals) {
-            uint256 noDecimalsReward = _rewardPerBlock.div(10 ** uint256(rewardToken.decimals()));
+            IERC20 mainToken = IERC20(_mainRewardToken);
+            uint256 noDecimalsReward = _rewardPerBlock.div(10 ** uint256(mainToken.decimals()));
             require(noDecimalsReward == _rewardIntegerPart, "invalid decimals for reward setting");
         }
-        administrators[_admin] = _admin;
+        admins[_admin] = _admin;
     }
 
     function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) public payable {
@@ -69,11 +69,7 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         uint256 stillNeed = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
 
-        if(IERC20TokenSupplier(0) != rewardSupplier) {
-            rewardSupplier.mint(address(rewardToken), msg.sender, userReward);
-        } else {
-            rewardToken.mint(msg.sender, userReward);
-        }
+        rewardSupplier.mint(mainRewardToken, msg.sender, userReward);
 
         user.willCollect = 0;
         user.stakeIn = user.stakeIn.sub(_withdrawAmount);

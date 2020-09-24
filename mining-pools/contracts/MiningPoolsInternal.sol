@@ -275,7 +275,7 @@ contract MiningPoolsInternal is MiningPoolsData {
         PoolInfo storage pool = pools[pid];
         require(pool.billingCycle > 0, "no such pool");
         require(!pool.closed, "closed pool");
-        require(address(pool.stakingToken) != INIT_ADDRESS, "stake token not set");
+        require(address(pool.stakingToken) != DUMMY_ADDRESS, "stake token not set");
 
         if(address(0) == address(pool.stakingToken)) {
             amount = msg.value;

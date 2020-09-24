@@ -1,15 +1,15 @@
 pragma solidity ^0.5.6;
 
-import "./IMineableToken.sol";
-import "./IMigrator.sol";
-import "./IMiningPools.sol";
 import "../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.sol";
+import "../../contract-libs/seal-sc/Constants.sol";
+import "./interface/IMiningPools.sol";
+import "./interface/IMigrator.sol";
 
-contract MiningPoolsData is IMiningPools {
+contract MiningPoolsData is IMiningPools, Constants {
     PoolInfo[] public pools;
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 
-    IMineableToken public rewardToken;
+    address public mainRewardToken;
     IERC20TokenSupplier public rewardSupplier;
 
     uint256 public rewardPerBlock;
@@ -17,8 +17,6 @@ contract MiningPoolsData is IMiningPools {
 
     uint256 public rewardCap;
     uint256 public collectedReward;
-
-    mapping(uint256=>bool) public closedPool;
 
     uint256 public precision = 1e18;
 
@@ -34,6 +32,4 @@ contract MiningPoolsData is IMiningPools {
     uint256 public rewardDecreaseBegin;
     uint256 public rewardDecreaseStep;
     uint256 public rewardDecreaseUnit;
-
-    address constant INIT_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 }
