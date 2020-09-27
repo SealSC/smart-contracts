@@ -6,9 +6,12 @@ import "../../contract-libs/open-zeppelin/IERC20.sol";
 import "../../mineable-erc20/contracts/interface/IMineableERC20.sol";
 import "./interface/IERC20TokenSupplier.sol";
 import "../../contract-libs/seal-sc/Constants.sol";
+import "../../contract-libs/open-zeppelin/SafeERC20.sol";
+import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
-contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants {
+contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants, RejectDirectETH {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     mapping(address=>TokenInfo) public tokens;
     address[] public tokenArray;
@@ -57,7 +60,7 @@ contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants {
         if(supplyBeforeMint < amount) {
             amount = supplyBeforeMint;
         }
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
 
         uint256 supplyAfterMint = token.balanceOf(address(this));
         return supplyBeforeMint.sub(supplyAfterMint);

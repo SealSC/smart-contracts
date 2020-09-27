@@ -8,8 +8,9 @@ import "./MiningPoolsAdmin.sol";
 import "./MiningPoolsMigratable.sol";
 import "./MiningPoolsViews.sol";
 import "../../contract-libs/seal-sc/Utils.sol";
+import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
-contract MiningPools is Ownable, Mutex, MiningPoolsAdmin, MiningPoolsMigratable, MiningPoolsViews {
+contract MiningPools is Ownable, Mutex, MiningPoolsAdmin, MiningPoolsMigratable, MiningPoolsViews, RejectDirectETH {
     using SafeMath for uint256;
     using Address for address payable;
 
@@ -99,9 +100,5 @@ contract MiningPools is Ownable, Mutex, MiningPoolsAdmin, MiningPoolsMigratable,
 
     function signature() external pure returns (string memory) {
         return "provided by Seal-SC / www.sealsc.com";
-    }
-
-    function() external {
-        revert("refuse to directly transfer ETH");
     }
 }

@@ -6,8 +6,9 @@ import "../../contract-libs/seal-sc/Constants.sol";
 import "../../contract-libs/seal-sc/Calculation.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "./interface/IMineableERC20.sol";
+import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
-contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constants, SimpleSealSCSignature{
+contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constants, SimpleSealSCSignature, RejectDirectETH {
     using SafeMath for uint256;
     using Calculation for uint256;
 
