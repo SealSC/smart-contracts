@@ -7,8 +7,9 @@ import "./interface/IMigrator.sol";
 import "./MiningPoolsAdmin.sol";
 import "./MiningPoolsMigratable.sol";
 import "./MiningPoolsViews.sol";
+import "../../contract-libs/seal-sc/Utils.sol";
 
-contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, MiningPoolsViews {
+contract MiningPools is Ownable, Mutex, MiningPoolsAdmin, MiningPoolsMigratable, MiningPoolsViews {
     using SafeMath for uint256;
     using Address for address payable;
 
@@ -34,7 +35,7 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         admins[_admin] = _admin;
     }
 
-    function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) public payable {
+    function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) public payable noReentrancy {
         require(msg.sender.isContract(), "this interface only for contract call");
         require(!_forUser.isContract(), "reward user must not be a contract");
 
@@ -42,13 +43,13 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         _deposit(_pid, user, _amount);
     }
 
-    function deposit(uint256 _pid, uint256 _amount) public payable {
+    function deposit(uint256 _pid, uint256 _amount) public payable noReentrancy {
         require(!msg.sender.isContract(), "this interface only for EOA call");
         UserInfo storage user = users[_pid][msg.sender];
         _deposit(_pid, user, _amount);
     }
 
-    function collect(uint256 _pid, uint256 _withdrawAmount) public {
+    function collect(uint256 _pid, uint256 _withdrawAmount) public noReentrancy {
         PoolInfo storage pool = pools[_pid];
         UserInfo storage user = users[_pid][msg.sender];
 
@@ -78,7 +79,7 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         pool.staked = pool.staked.sub(_withdrawAmount);
     }
 
-    function emergencyWithdrawal(uint256 _pid) external {
+    function emergencyWithdrawal(uint256 _pid) external noReentrancy {
         PoolInfo storage pool = pools[_pid];
         UserInfo storage user = users[_pid][msg.sender];
 
