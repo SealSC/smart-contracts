@@ -17,8 +17,11 @@ contract UniswapConnectorAdmin is Ownable, UniswapConnectorInternal {
     function addSupportedPair(address _lpToken, address _tokenA, address _tokenB) external onlyOwner {
         address[] storage pair = supportedPair[_lpToken];
         if(pair.length != 0) {
-            return;
+            revert("already added");
         }
+
+        address pairAddr = factory.getPair(_tokenA, _tokenB);
+        require(_lpToken == pairAddr,  "not a uni-pair");
 
         pair.push(_tokenA);
         pair.push(_tokenB);

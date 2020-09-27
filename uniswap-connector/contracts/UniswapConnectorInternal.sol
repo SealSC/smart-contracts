@@ -16,6 +16,14 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         router.addLiquidityETH.value(_ethMin)(_token, _tokenAmount, 0, 0, _lpTo, block.timestamp);
     }
 
+    function _removeLiquidity(address _tokenA, address _tokenB, uint256 _liquidity, address _to) internal {
+        if(_tokenA == ZERO_ADDRESS) {
+            router.removeLiquidityETH(_tokenB, _liquidity, 0, 0, _to, block.number);
+        } else {
+            router.removeLiquidity(_tokenA, _tokenB, _liquidity, 0, 0, _to, block.number);
+        }
+    }
+
     function _swapToken(
         address _inToken,
         address _outToken,
@@ -103,5 +111,63 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         uint256 afterAddLPAmount = lpToken.balanceOf(_thisAddr);
 
         return afterAddLPAmount.sub(beforeAddLPAmount);
+    }
+
+
+    function _amountOfTokens(address _tokenA, address _tokenB) internal view returns (uint256 amountA, uint256 amountB) {
+        if(_tokenA == ZERO_ADDRESS) {
+            amountA = address(this).balance;
+        } else {
+            amountA = IERC20(_tokenA).balanceOf(address(this));
+        }
+
+        amountB = IERC20(_tokenB).balanceOf(address(this));
+
+        return (amountA, amountB);
+    }
+
+    function _swapLPReturnedToAnotherToken() internal pure {
+        revert("not supported yet");
+    }
+
+    function _swapLPReturnETHForToken(uint256 _inAmount, address _outToken) internal returns(uint256) {
+        address[] memory path = new address[](2);
+        path[0] = address(weth);
+        path[1] = _outToken;
+
+        router.swapExactETHForTokens.value(_inAmount)(0, path, address(this), block.timestamp);
+
+        return IERC20(_outToken).balanceOf(address(this));
+    }
+
+    function _swapLPReturnTokenForToken(address _inToken, uint256 _inAmount, address _outToken) internal returns(uint256) {
+        address[] memory path = new address[](2);
+        path[0] = _inToken;
+        path[1] = _outToken;
+
+        router.swapExactTokensForTokens(_inAmount, 0, path, address(this), block.timestamp);
+        return IERC20(_outToken).balanceOf(address(this));
+    }
+
+    function _swapLPReturnTokenForETH(address _inToken, uint256 _inAmount) internal returns(uint256) {
+        address[] memory path = new address[](2);
+        path[0] = _inToken;
+        path[1] = address(weth);
+
+        router.swapExactTokensForETH(_inAmount, 0, path, address(this), block.timestamp);
+        return address(this).balance;
+    }
+
+    function _swapLPReturnedForOneToken(address _inToken, address _outToken, uint256 _inAmount) internal returns(uint256) {
+
+        if(_inToken == ZERO_ADDRESS) {
+            return _swapLPReturnETHForToken(_inAmount, _outToken);
+        } else {
+            if(_outToken == ZERO_ADDRESS) {
+                return _swapLPReturnTokenForETH(_inToken, _inAmount);
+            } else {
+                return _swapLPReturnTokenForToken(_inToken, _inAmount, _outToken);
+            }
+        }
     }
 }
