@@ -3,10 +3,12 @@ pragma solidity ^0.5.9;
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Address.sol";
 import "./MiningPoolsData.sol";
+import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 
 contract MiningPoolsInternal is MiningPoolsData {
     using SafeMath for uint256;
     using Address for address payable;
+    using SafeERC20 for IERC20;
 
     function _poolsEnabled() internal view returns(bool) {
         return globalOpen && block.number >= globalStartBlock;
@@ -91,7 +93,7 @@ contract MiningPoolsInternal is MiningPoolsData {
             if(address(0) == address(pool.stakingToken)) {
                 msg.sender.sendValue(_amount);
             } else {
-                pool.stakingToken.transfer(msg.sender, _amount);
+                pool.stakingToken.safeTransfer(msg.sender, _amount);
             }
         }
     }
@@ -280,20 +282,24 @@ contract MiningPoolsInternal is MiningPoolsData {
         if(address(0) == address(pool.stakingToken)) {
             amount = msg.value;
         } else {
-            require(msg.value != 0, "erc20 token staking not accept ETH in.");
+            require(msg.value == 0, "erc20 token staking not accept ETH in.");
         }
 
         (bool valid, string memory errInfo) = _canDeposit(pool, amount);
         require(valid, errInfo);
 
         if(address(0) != address(pool.stakingToken)) {
-            pool.stakingToken.transferFrom(msg.sender, address(this), amount);
+            pool.stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         }
 
         _updatePool(pool);
         if (user.stakeIn > 0) {
             uint256 willCollect = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
             user.willCollect = user.willCollect.add(willCollect);
+        }
+
+        if(user.lastCollectPosition == 0) {
+            user.lastCollectPosition = block.number;
         }
         pool.staked = pool.staked.add(amount);
         user.stakeIn = user.stakeIn.add(amount);

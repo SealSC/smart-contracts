@@ -78,6 +78,24 @@ contract MiningPools is Ownable, MiningPoolsAdmin, MiningPoolsMigratable, Mining
         pool.staked = pool.staked.sub(_withdrawAmount);
     }
 
+    function emergencyWithdrawal(uint256 _pid) external {
+        PoolInfo storage pool = pools[_pid];
+        UserInfo storage user = users[_pid][msg.sender];
+
+        require(pool.billingCycle > 0, "no such pool");
+        require(user.stakeIn > 0, "not deposit");
+
+        _tryWithdraw(pool, user, user.stakeIn);
+
+        _updatePool(pool);
+
+        user.willCollect = 0;
+        pool.staked = pool.staked.sub(user.stakeIn);
+        user.stakeIn = 0;
+        user.rewardDebt = 0;
+        user.lastCollectPosition = block.number;
+    }
+
     function signature() external pure returns (string memory) {
         return "provided by Seal-SC / www.sealsc.com";
     }
