@@ -1,11 +1,11 @@
 pragma solidity ^0.5.9;
 
-import "../../contract-libs/open-zeppelin/SafeMath.sol";
-import "../../contract-libs/open-zeppelin/Address.sol";
-import "./MiningPoolsData.sol";
-import "../../contract-libs/open-zeppelin/SafeERC20.sol";
+import "../../../contract-libs/open-zeppelin/SafeMath.sol";
+import "../../../contract-libs/open-zeppelin/Address.sol";
+import "../../../contract-libs/open-zeppelin/SafeERC20.sol";
+import "../AdventureIslandData/AdventureIslandData.sol";
 
-contract MiningPoolsInternal is MiningPoolsData {
+contract AdventureIslandInternal is AdventureIslandData {
     using SafeMath for uint256;
     using Address for address payable;
     using SafeERC20 for IERC20;

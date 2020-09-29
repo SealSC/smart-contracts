@@ -3,14 +3,12 @@ pragma solidity ^0.5.9;
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/Address.sol";
-import "./interface/IMigrator.sol";
-import "./MiningPoolsAdmin.sol";
-import "./MiningPoolsMigratable.sol";
-import "./MiningPoolsViews.sol";
 import "../../contract-libs/seal-sc/Utils.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
+import "./AdventureIslandViews.sol";
+import "./AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
-contract MiningPools is Ownable, Mutex, MiningPoolsAdmin, MiningPoolsMigratable, MiningPoolsViews, RejectDirectETH {
+contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslandViews, RejectDirectETH {
     using SafeMath for uint256;
     using Address for address payable;
 

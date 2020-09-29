@@ -2,7 +2,7 @@ pragma solidity ^0.5.9;
 
 import "../../../contract-libs/open-zeppelin/IERC20.sol";
 
-interface IMiningPools {
+interface IAdventureIsland {
     struct PoolInfo {
         IERC20 stakingToken;
         uint256 startBlock;

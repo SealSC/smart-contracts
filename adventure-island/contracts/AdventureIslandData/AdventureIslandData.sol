@@ -1,11 +1,10 @@
 pragma solidity ^0.5.6;
 
-import "../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.sol";
-import "../../contract-libs/seal-sc/Constants.sol";
-import "./interface/IMiningPools.sol";
-import "./interface/IMigrator.sol";
+import "../interface/IAdventureIsland.sol";
+import "../../../contract-libs/seal-sc/Constants.sol";
+import "../../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.sol";
 
-contract MiningPoolsData is IMiningPools, Constants {
+contract AdventureIslandData is IAdventureIsland, Constants {
     PoolInfo[] public pools;
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 

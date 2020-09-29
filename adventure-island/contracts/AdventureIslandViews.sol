@@ -1,8 +1,8 @@
 pragma solidity ^0.5.9;
 
-import "./MiningPoolsInternal.sol";
+import "./AdventureIslandInternal/AdventureIslandInternal.sol";
 
-contract MiningPoolsViews is MiningPoolsInternal {
+contract AdventureIslandViews is AdventureIslandInternal {
     function poolsCount() public view returns(uint256) {
         return pools.length;
     }
