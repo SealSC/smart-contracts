@@ -81,12 +81,14 @@ contract UniswapConnectorInternal is UniswapConnectorData {
             require(supportedPair[_lp][0] == _outToken && supportedPair[_lp][1] == _inToken, "not a pair");
         }
 
-        if(_inToken != ZERO_ADDRESS) {
+        if(_inToken != ZERO_ADDRESS  && _outToken != ZERO_ADDRESS) {
             IERC20 inToken = IERC20(_inToken);
             inToken.safeTransferFrom(msg.sender, _thisAddr, _amount);
             return _swapToken(_lp, _inToken, _outToken, _amount, _thisAddr);
-        } else {
+        } else if(_inToken == ZERO_ADDRESS && _outToken != ZERO_ADDRESS) {
             return _swapETHForToken(_lp, _outToken, _thisAddr);
+        } else {
+            revert("eth swap out not supported");
         }
     }
 
