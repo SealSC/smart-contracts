@@ -24,16 +24,20 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         }
     }
 
+    function _swapInVal(uint256 _inAmount, address _inToken, address _pair) internal view returns(uint256) {
+        uint256 _uinInBalance = IERC20(_inToken).balanceOf(_pair);
+        return  _uinInBalance.mul(_inAmount).add(_uinInBalance.mul(_uinInBalance)).sqrt().sub(_uinInBalance);
+    }
+
     function _swapToken(
+        address _pair,
         address _inToken,
         address _outToken,
         uint256 _inAmount,
-        uint256 _fee,
         address _thisAddr) internal returns(uint256, uint256) {
 
         uint256 beforeSwap = IERC20(_outToken).balanceOf(_thisAddr);
-        uint256 swapAmount = _inAmount.sub(_fee);
-        uint256 swapVal = swapAmount.div(2);
+        uint256 swapVal = _swapInVal(_inAmount, _inToken, _pair);
 
         address[] memory path = new address[](2);
         path[0] = _inToken;
@@ -42,16 +46,15 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         router.swapExactTokensForTokens(swapVal, 0, path, _thisAddr, block.timestamp);
 
         uint256 afterSwap = IERC20(_outToken).balanceOf(_thisAddr);
-        uint256 swapBackAmount = afterSwap.sub(beforeSwap);
+        uint256 swapBack = afterSwap.sub(beforeSwap);
 
-        return (swapBackAmount, swapVal);
+        return (swapBack, swapVal);
     }
 
-    function _swapETHForToken(uint256 fee, address _outToken, address _thisAddr) internal returns(uint256, uint256) {
+    function _swapETHForToken(address _pair, address _outToken, address _thisAddr) internal returns(uint256, uint256) {
         uint256 beforeSwap = IERC20(_outToken).balanceOf(_thisAddr);
 
-        uint256 ethVal = msg.value.sub(fee);
-        uint256 swapVal = ethVal.div(2);
+        uint256 swapVal = _swapInVal(msg.value, address(weth), _pair);
 
         address[] memory path = new address[](2);
         path[0] = address(weth);
@@ -81,12 +84,9 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         if(_inToken != ZERO_ADDRESS) {
             IERC20 inToken = IERC20(_inToken);
             inToken.safeTransferFrom(msg.sender, _thisAddr, _amount);
-            uint256 fee = _amount.mul(feeBasisPoint).div(feePrecision);
-            return _swapToken(_inToken, _outToken, _amount, fee, _thisAddr);
+            return _swapToken(_lp, _inToken, _outToken, _amount, _thisAddr);
         } else {
-            _amount = msg.value;
-            uint256 fee = _amount.mul(feeBasisPoint).div(feePrecision);
-            return _swapETHForToken(fee, _outToken, _thisAddr);
+            return _swapETHForToken(_lp, _outToken, _thisAddr);
         }
     }
 
@@ -94,7 +94,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         address _lp,
         address _inToken,
         address _outToken,
-        uint256 _swapVal,
+        uint256 _inVal,
         uint256 _swapBack,
         address _thisAddr) internal returns (uint256) {
 
@@ -103,9 +103,9 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         uint256 beforeAddLPAmount = lpToken.balanceOf(_thisAddr);
 
         if(_inToken != ZERO_ADDRESS) {
-            _addLiquidity(_inToken, _outToken, _swapVal, _swapBack, _thisAddr);
+            _addLiquidity(_inToken, _outToken, _inVal, _swapBack, _thisAddr);
         } else {
-            _addLiquidityETH(_swapVal, _outToken, _swapBack, _thisAddr);
+            _addLiquidityETH(_inVal, _outToken, _swapBack, _thisAddr);
         }
 
         uint256 afterAddLPAmount = lpToken.balanceOf(_thisAddr);

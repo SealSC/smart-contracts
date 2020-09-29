@@ -17,4 +17,5 @@ contract Constants {
 
 
     uint256 constant internal BASIS_POINT_PRECISION = 1e4;
+    uint256 constant internal COMMON_PRECISION = 1e18;
 }

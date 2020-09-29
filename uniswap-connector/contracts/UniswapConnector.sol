@@ -4,26 +4,23 @@ import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Address.sol";
 import "../../contract-libs/uniswap/IUniswapV2Router02.sol";
-import "../../mining-pools/contracts/interface/IMiningPools.sol";
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "./UniswapConnectorAdmin.sol";
 import "./UniswapConnectorViews.sol";
+import "../../contract-libs/seal-sc/Calculation.sol";
 
 contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
     using SafeMath for uint256;
     using Address for address payable;
     using SafeERC20 for IERC20;
+    using Calculation for uint256;
 
     modifier validLP(address _lp) {
         require(supportedPair[_lp].length == 2, "not supported pair");
         _;
     }
 
-    constructor(address _owner, address _pools, address _router) public Ownable(_owner) {
-        feeBasisPoint = feePrecision.div(10000).mul(400);
-        miningPools = IMiningPools(_pools);
-        router = IUniswapV2Router02(_router);
-    }
+    constructor(address _owner) public Ownable(_owner) {}
 
     function flashRemoveLP(address _lp, address _to, uint256 _amount) public validLP(_lp) {
         address tokenA = supportedPair[_lp][0];
@@ -68,32 +65,22 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
         }
     }
 
-    function flashGetLP(address _lp, address _inToken, uint256 _amount, address _outToken) public validLP(_lp) returns(uint256)  {
+    function flashGetLP(
+        address _lp,
+        address _inToken,
+        uint256 _amount,
+        address _outToken) external payable validLP(_lp) returns(uint256)  {
+
         if(_inToken == ZERO_ADDRESS) {
             address thisAddr = address(this);
             (uint256 swapBack, uint256 swapVal) = _prepareToken(_lp, ZERO_ADDRESS, _outToken, 0, thisAddr);
-            return _getLP(_lp, ZERO_ADDRESS, _outToken, swapVal, swapBack, thisAddr);
+            return _getLP(_lp, ZERO_ADDRESS, _outToken, msg.value.sub(swapVal), swapBack, thisAddr);
         } else {
+            require(msg.value == 0, "not accept eth in token2token swap");
             address thisAddr = address(this);
             (uint256 swapBack, uint256 swapVal) = _prepareToken(_lp, _inToken, _outToken, _amount, thisAddr);
-            return _getLP(_lp, _inToken, _outToken, swapVal, swapBack, thisAddr);
+            return _getLP(_lp, _inToken, _outToken, _amount.sub(swapVal), swapBack, thisAddr);
         }
-    }
-
-    function flashStakingToken(address _lp, address _inToken, uint256 _amount, address _outToken, uint256 _pid) external {
-        address stakingToken = miningPools.getPoolStakingToken(_pid);
-        require(stakingToken == _lp, "not the right staking pool");
-
-        uint256 lpAmount = flashGetLP(_lp, _inToken, _amount, _outToken);
-        miningPools.depositByContract(_pid, lpAmount, msg.sender);
-    }
-
-    function flashStakingETH(address _lp, address _outToken, uint256 _pid) external payable validLP(_lp) {
-        address stakingToken = miningPools.getPoolStakingToken(_pid);
-        require(stakingToken == _lp, "not the right staking pool");
-
-        uint256 lpAmount = flashGetLP(_lp, ZERO_ADDRESS, 0, _outToken);
-        miningPools.depositByContract(_pid, lpAmount, msg.sender);
     }
 
     function () external payable {}
