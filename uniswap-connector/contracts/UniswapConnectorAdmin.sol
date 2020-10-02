@@ -20,7 +20,11 @@ contract UniswapConnectorAdmin is Ownable, UniswapConnectorInternal {
             revert("already added");
         }
 
-        address pairAddr = factory.getPair(_tokenA, _tokenB);
+        address tokenAAddr = _tokenA;
+        if(tokenAAddr ==  ZERO_ADDRESS) {
+            tokenAAddr = address(weth);
+        }
+        address pairAddr = factory.getPair(tokenAAddr, _tokenB);
         require(_lpToken == pairAddr,  "not a uni-pair");
 
         pair.push(_tokenA);
@@ -34,7 +38,7 @@ contract UniswapConnectorAdmin is Ownable, UniswapConnectorInternal {
 
         lp.safeApprove(address(router), ~uint256(0));
 
-        if(_tokenA != address(0)) {
+        if(_tokenA != ZERO_ADDRESS) {
             if(tokenA.allowance(address(this), address(router)) == 0) {
                 tokenA.safeApprove(address(router), ~uint256(0));
             }

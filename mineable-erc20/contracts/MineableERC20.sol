@@ -49,7 +49,7 @@ contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constan
 
     function setMinter(address _minter, uint256 _weight) external onlyAdmin {
         MinterInfo memory mi = minters[_minter];
-        require(mi.minter !=  ZERO_ADDRESS, "minter already set");
+        require(mi.minter ==  ZERO_ADDRESS, "minter already set");
 
         uint256 minterWeight  = _weight;
         if(minterWeight == 0) {
@@ -57,7 +57,7 @@ contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constan
         }
 
         mi.minter = _minter;
-        mi.weight = _weight;
+        mi.weight = minterWeight;
         minters[_minter] = mi;
     }
 

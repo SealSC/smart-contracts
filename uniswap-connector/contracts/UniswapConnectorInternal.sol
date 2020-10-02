@@ -8,20 +8,31 @@ contract UniswapConnectorInternal is UniswapConnectorData {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    function _addLiquidity(address _a, address _b, uint _aAmount, uint _bAmount, address to) internal {
-        router.addLiquidity(_a, _b, _aAmount, _bAmount, 0, 0, to, block.timestamp);
+    function _swapDeadline() view internal returns(uint) {
+        return block.timestamp + 300;
     }
 
-    function _addLiquidityETH(uint256 _ethMin,  address _token, uint256 _tokenAmount, address _lpTo) internal {
-        router.addLiquidityETH.value(_ethMin)(_token, _tokenAmount, 0, 0, _lpTo, block.timestamp);
+    function _addLiquidity(address _a, address _b, uint _aAmount, uint _bAmount, address _to) internal {
+        router.addLiquidity(_a, _b, _aAmount, _bAmount, 0, 0, _to, _swapDeadline());
     }
 
-    function _removeLiquidity(address _tokenA, address _tokenB, uint256 _liquidity, address _to) internal {
+    function _addLiquidityETH(uint256 _ethMin,  address _token, uint256 _tokenAmount, address _to) internal {
+        router.addLiquidityETH.value(_ethMin)(_token, _tokenAmount, 0, 0, _to, _swapDeadline());
+    }
+
+    function _removeLiquidity(
+        address _tokenA,
+        address _tokenB,
+        uint256 _liquidity) internal returns(uint256 amountA, uint256 amountB) {
+
         if(_tokenA == ZERO_ADDRESS) {
-            router.removeLiquidityETH(_tokenB, _liquidity, 0, 0, _to, block.number);
+            //token A is eth and uniswap router will return eth value @ second slot
+            (amountB, amountA) = router.removeLiquidityETH(_tokenB, _liquidity, 0, 0, address(this), _swapDeadline());
         } else {
-            router.removeLiquidity(_tokenA, _tokenB, _liquidity, 0, 0, _to, block.number);
+            (amountA, amountB) = router.removeLiquidity(_tokenA, _tokenB, _liquidity, 0, 0,  address(this), _swapDeadline());
         }
+
+        return (amountA, amountB);
     }
 
     function _swapInVal(uint256 _inAmount, address _inToken, address _pair) internal view returns(uint256) {
@@ -43,7 +54,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         path[0] = _inToken;
         path[1] = _outToken;
 
-        router.swapExactTokensForTokens(swapVal, 0, path, _thisAddr, block.timestamp);
+        router.swapExactTokensForTokens(swapVal, 0, path, _thisAddr, _swapDeadline());
 
         uint256 afterSwap = IERC20(_outToken).balanceOf(_thisAddr);
         uint256 swapBack = afterSwap.sub(beforeSwap);
@@ -60,7 +71,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         path[0] = address(weth);
         path[1] =  _outToken;
 
-        router.swapExactETHForTokens.value(swapVal)(0, path, _thisAddr, block.timestamp);
+        router.swapExactETHForTokens.value(swapVal)(0, path, _thisAddr, _swapDeadline());
 
         uint256 afterSwap = IERC20(_outToken).balanceOf(_thisAddr);
         uint256 swapBack = afterSwap.sub(beforeSwap);
@@ -98,19 +109,19 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         address _outToken,
         uint256 _inVal,
         uint256 _swapBack,
-        address _thisAddr) internal returns (uint256) {
+        address _to) internal returns (uint256) {
 
         IERC20 lpToken = IERC20(_lp);
 
-        uint256 beforeAddLPAmount = lpToken.balanceOf(_thisAddr);
+        uint256 beforeAddLPAmount = lpToken.balanceOf(_to);
 
         if(_inToken != ZERO_ADDRESS) {
-            _addLiquidity(_inToken, _outToken, _inVal, _swapBack, _thisAddr);
+            _addLiquidity(_inToken, _outToken, _inVal, _swapBack, _to);
         } else {
-            _addLiquidityETH(_inVal, _outToken, _swapBack, _thisAddr);
+            _addLiquidityETH(_inVal, _outToken, _swapBack, _to);
         }
 
-        uint256 afterAddLPAmount = lpToken.balanceOf(_thisAddr);
+        uint256 afterAddLPAmount = lpToken.balanceOf(_to);
 
         return afterAddLPAmount.sub(beforeAddLPAmount);
     }
@@ -137,7 +148,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         path[0] = address(weth);
         path[1] = _outToken;
 
-        router.swapExactETHForTokens.value(_inAmount)(0, path, address(this), block.timestamp);
+        router.swapExactETHForTokens.value(_inAmount)(0, path, address(this), _swapDeadline());
 
         return IERC20(_outToken).balanceOf(address(this));
     }
@@ -147,7 +158,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         path[0] = _inToken;
         path[1] = _outToken;
 
-        router.swapExactTokensForTokens(_inAmount, 0, path, address(this), block.timestamp);
+        router.swapExactTokensForTokens(_inAmount, 0, path, address(this), _swapDeadline());
         return IERC20(_outToken).balanceOf(address(this));
     }
 
@@ -156,7 +167,7 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         path[0] = _inToken;
         path[1] = address(weth);
 
-        router.swapExactTokensForETH(_inAmount, 0, path, address(this), block.timestamp);
+        router.swapExactTokensForETH(_inAmount, 0, path, address(this), _swapDeadline());
         return address(this).balance;
     }
 
