@@ -8,8 +8,9 @@ import "./interface/IERC20TokenSupplier.sol";
 import "../../contract-libs/seal-sc/Constants.sol";
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
+import "../../contract-libs/seal-sc/Utils.sol";
 
-contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants, RejectDirectETH {
+contract ERC20TokenSupplier is Ownable, Mutex, IERC20TokenSupplier, Constants, RejectDirectETH {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -73,10 +74,10 @@ contract ERC20TokenSupplier is Ownable, IERC20TokenSupplier, Constants, RejectDi
         token.mint(to, amount);
 
         uint256 supplyAfterMint = token.balanceOf(to);
-        return supplyBeforeMint.sub(supplyAfterMint);
+        return supplyAfterMint.sub(supplyBeforeMint);
     }
 
-    function mint(address _token, address _to, uint256 _amount) external onlyConsumer returns(uint256) {
+    function mint(address _token, address _to, uint256 _amount) external onlyConsumer noReentrancy returns(uint256) {
         TokenInfo memory ti = tokens[_token];
         require(ti.token != ZERO_ADDRESS, "no such token");
 
