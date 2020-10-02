@@ -21,4 +21,9 @@ contract AdventureIslandAdmin is AdventureIslandPoolManager {
         _updatePools();
         rewardPerBlock = _newReward;
     }
+
+    function changeUniConnector(address _newUniConnector) external onlyAdmin {
+        uniConnector = IUniswapConnector(_newUniConnector);
+        ethPayer[_newUniConnector] = true;
+    }
 }

@@ -4,11 +4,13 @@ import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../../contract-libs/open-zeppelin/Address.sol";
 import "../../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../AdventureIslandData/AdventureIslandData.sol";
+import "../../../contract-libs/seal-sc/Calculation.sol";
 
 contract AdventureIslandInternal is AdventureIslandData {
     using SafeMath for uint256;
     using Address for address payable;
     using SafeERC20 for IERC20;
+    using Calculation for uint256;
 
     function _poolsEnabled() internal view returns(bool) {
         return globalOpen && block.number >= globalStartBlock;
@@ -36,95 +38,137 @@ contract AdventureIslandInternal is AdventureIslandData {
                 continue;
             }
 
+            if(pool.staked == 0) {
+                continue;
+            }
+
             totalWeight = totalWeight.add(pool.weight);
         }
 
         return totalWeight;
     }
 
-    function _decreasedRewards(uint256 from, uint256 to) internal view returns(uint256) {
-        if(!rewardDecreasable) {
-            return 0;
-        }
-
-        if(to < rewardDecreaseBegin) {
-            return 0;
-        }
-
-        if(to <= from) {
-            return 0;
-        }
-
-        uint256 decreaseBegin = 0;
-        uint256 totalDecreased = 0;
-
-        uint256 maxDiff = rewardPerBlock.sub(minRewardPerBlock);
-        uint256 maxDecreaseSteps = rewardPerBlock.sub(minRewardPerBlock).div(rewardDecreaseUnit);
-        uint256 targetEnd = to.sub(rewardDecreaseBegin).div(rewardDecreaseStep);
-
-        if(from > rewardDecreaseBegin) {
-            decreaseBegin = from.sub(rewardDecreaseBegin).div(rewardDecreaseStep);
-        }
-
-        if(decreaseBegin >= maxDecreaseSteps) {
-            totalDecreased = maxDiff.mul(maxDecreaseSteps.add(1)).div(2);
-            return totalDecreased;
-        }
-
-        if(targetEnd > maxDecreaseSteps) {
-            totalDecreased = maxDiff.mul(targetEnd.sub(maxDecreaseSteps).mul(rewardDecreaseStep));
-            targetEnd = maxDecreaseSteps;
-        }
-
-        uint256 decreaseCount = targetEnd.sub(decreaseBegin);
-
-        uint256 endReward = decreaseCount.mul(rewardDecreaseUnit);
-        uint256 beginReward = decreaseBegin.mul(rewardDecreaseUnit);
-        uint256 currentDecreased = endReward.add(beginReward).mul(decreaseCount.add(1)).div(2);
-
-        return totalDecreased.add(currentDecreased);
-    }
-
     function _tryWithdraw(PoolInfo storage pool, UserInfo storage user, uint256 _amount) internal {
         if(user.stakeIn < _amount) {
             return;
         }
-        if(_amount > 0) {
-            if(address(0) == address(pool.stakingToken)) {
-                msg.sender.sendValue(_amount);
-            } else {
-                pool.stakingToken.safeTransfer(msg.sender, _amount);
-            }
+
+        if(_amount == 0) {
+            return;
+        }
+
+        if(address(0) == address(pool.stakingToken)) {
+            msg.sender.sendValue(_amount);
+        } else {
+            pool.stakingToken.safeTransfer(msg.sender, _amount);
         }
     }
 
-    function _poolsOutput(uint256 from, uint256 to) internal view returns(uint256){
-        if(from  < globalStartBlock) {
-            from = globalStartBlock;
+    function _chargeFlashUnstakingFee(
+        address _tokenA,
+        uint256 _amountA,
+        address _tokenB,
+        uint256 _amountB) internal returns(uint256 amountA, uint256 amountB) {
+        uint256 feeBP = platformFeeBP;
+        if(_amountB != 0) {
+            feeBP = feeBP.div(2);
         }
 
-        uint256 averReward = rewardPerBlock;
+        uint256 feeA = _amountA.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
+        uint256 feeB = _amountB.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
 
-        uint256 alreadyDecreased = _decreasedRewards(globalStartBlock, from);
-        uint256 decreased = _decreasedRewards(from, to);
+        platformFeeCollected[_tokenA] = platformFeeCollected[_tokenA].add(feeA);
+        platformFeeCollected[_tokenB] = platformFeeCollected[_tokenA].add(feeB);
 
-        uint256 output = to.sub(from).mul(averReward);
-        uint256 alreadyOutput = from.sub(globalStartBlock).mul(averReward);
+        amountA = _amountA.sub(feeA);
+        amountB = _amountB.sub(feeB);
 
-        alreadyOutput = alreadyOutput.sub(alreadyDecreased);
-        output = output.sub(decreased);
+        return (amountA, amountB);
+    }
 
-        if(rewardCap > 0) {
-            if(alreadyOutput > rewardCap) {
-                return 0;
+    function _getTokenPrice(address _token) view public returns(uint256) {
+        if(_token == address(USDT)) {
+            return USDT_PRECISION;
+        }
+        address[] memory path = new address[](2);
+        path[0] = address(_token);
+        path[1] = address(USDT);
+
+        uint256 oneToken = 1 * (10 ** uint256(IERC20(_token).decimals()));
+
+        uint256[] memory price = UNI_V2_ROUTER.getAmountsOut(oneToken, path);
+        return price[1];
+    }
+
+    function _flashStakingReward(uint256 _amount, uint256 _price) view internal returns(uint256) {
+        return _price.mul(_amount).percentageMul(flashStakingRewardBP, BASIS_POINT_PRECISION).div(USDT_PRECISION);
+    }
+
+    function _approveConnector(IERC20 _lp) internal {
+        uint256 approved = _lp.allowance(address(this), address(uniConnector));
+        if(approved == 0) {
+            _lp.approve(address(uniConnector), MAX_UINT256);
+        }
+    }
+
+    function _tryFlashUnstaking(
+        PoolInfo storage pool,
+        UserInfo storage user,
+        bool _forOneToken,
+        address _outToken,
+        uint256 _amount) internal returns(uint256) {
+
+        if(user.stakeIn < _amount) {
+            return 0;
+        }
+
+        if(_amount == 0) {
+            return 0;
+        }
+
+        (address tokenA, address tokenB) = uniConnector.lpToPair(address(pool.stakingToken));
+        if(tokenA == DUMMY_ADDRESS) {
+            return 0;
+        }
+
+        _approveConnector(pool.stakingToken);
+
+        uint256 amountA;
+        uint256 amountB;
+
+        uint256 rewardAmount = 0;
+        if(_forOneToken)  {
+            amountA = uniConnector.flashRemoveLPForOneToken(address(pool.stakingToken), _outToken, address(uint160(address(this))), _amount);
+
+            //make sure amountB using for token amount
+            if(_outToken != ZERO_ADDRESS) {
+                amountB = amountA;
+                amountA = 0;
             }
+        } else {
+            (amountA, amountB) = uniConnector.flashRemoveLP(address(pool.stakingToken), address(uint160(address(this))), _amount, true);
+        }
 
-            if(output.add(alreadyOutput) > rewardCap) {
-                output = rewardCap.sub(alreadyOutput);
+        (amountA, amountB) = _chargeFlashUnstakingFee(tokenA, amountA, tokenB, amountB);
+
+        if(amountA > 0) {
+            if(tokenA == ZERO_ADDRESS) {
+                msg.sender.sendValue(amountA);
+                rewardAmount = _flashStakingReward(amountA, _getTokenPrice(address(WETH)));
+            } else {
+                IERC20(tokenA).safeTransfer(msg.sender, amountA);
+                rewardAmount = _flashStakingReward(amountA, _getTokenPrice(tokenA));
             }
         }
 
-        return output;
+        if(amountB > 0) {
+            IERC20(tokenB).safeTransfer(msg.sender, amountB);
+            uint256 rewardOfB = _flashStakingReward(amountB, _getTokenPrice(_outToken));
+            rewardAmount = rewardAmount.add(rewardOfB);
+        }
+
+        rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
+        return rewardAmount;
     }
 
     function _toBeCollected(PoolInfo storage pool, uint256 from, uint256 to) internal view returns (uint256) {
@@ -136,31 +180,34 @@ contract AdventureIslandInternal is AdventureIslandData {
             return 0;
         }
 
-        if(to > pool.endBlock && pool.endBlock != 0) {
-            to = pool.endBlock;
-        }
-
         if(block.number < pool.lastRewardBlock) {
             return 0;
         }
 
+        if(to > pool.endBlock && pool.endBlock != 0) {
+            to = pool.endBlock;
+        }
+
         if(to > block.number) {
-            return 0;
+            to = block.number;
         }
 
         if(from < pool.lastRewardBlock) {
             from = pool.lastRewardBlock;
         }
 
-        uint256 poolMultiple = precision;
-        poolMultiple = pool.weight.mul(precision).div(_poolsTotalWeight());
+        if(from >= to) {
+            return 0;
+        }
 
-        uint256 poolsOutput = _poolsOutput(from, to);
+        uint256 poolMultiple = pool.weight.mul(COMMON_PRECISION).div(_poolsTotalWeight());
+
+        uint256 poolsOutput = to.sub(from).mul(rewardPerBlock);
         if(poolsOutput == 0) {
             return 0;
         }
 
-        return poolsOutput.mul(poolMultiple).div(precision);
+        return poolsOutput.mul(poolMultiple).div(COMMON_PRECISION);
     }
 
     function _canDeposit(PoolInfo storage pool, uint256 _amount) internal view returns(bool, string memory) {
@@ -253,8 +300,11 @@ contract AdventureIslandInternal is AdventureIslandData {
         }
 
         uint256 teBeCollect = _toBeCollected(pool, pool.lastRewardBlock, block.number);
-        pool.rewardPerShare = pool.rewardPerShare.add(teBeCollect.mul(precision).div(pool.staked));
+        pool.rewardPerShare = pool.rewardPerShare.add(teBeCollect.mul(COMMON_PRECISION).div(pool.staked));
         pool.lastRewardBlock = block.number;
+        if(pool.lastRewardBlock > pool.endBlock && pool.endBlock > 0) {
+            pool.lastRewardBlock = pool.endBlock;
+        }
     }
 
     function _updatePools() internal {
@@ -273,28 +323,22 @@ contract AdventureIslandInternal is AdventureIslandData {
         }
     }
 
-    function _deposit(uint256 pid, UserInfo storage user, uint256 amount) internal {
+    function _staking(uint256 pid, UserInfo storage user, uint256 amount, bool isFlashStaking) internal {
         PoolInfo storage pool = pools[pid];
         require(pool.billingCycle > 0, "no such pool");
         require(!pool.closed, "closed pool");
         require(address(pool.stakingToken) != DUMMY_ADDRESS, "stake token not set");
 
-        if(address(0) == address(pool.stakingToken)) {
-            amount = msg.value;
-        } else {
-            require(msg.value == 0, "erc20 token staking not accept ETH in.");
-        }
-
         (bool valid, string memory errInfo) = _canDeposit(pool, amount);
         require(valid, errInfo);
 
-        if(address(0) != address(pool.stakingToken)) {
+        if(ZERO_ADDRESS != address(pool.stakingToken) && !isFlashStaking) {
             pool.stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         }
 
         _updatePool(pool);
         if (user.stakeIn > 0) {
-            uint256 willCollect = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
+            uint256 willCollect = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION).sub(user.rewardDebt);
             user.willCollect = user.willCollect.add(willCollect);
         }
 
@@ -303,6 +347,6 @@ contract AdventureIslandInternal is AdventureIslandData {
         }
         pool.staked = pool.staked.add(amount);
         user.stakeIn = user.stakeIn.add(amount);
-        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(precision);
+        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION);
     }
 }

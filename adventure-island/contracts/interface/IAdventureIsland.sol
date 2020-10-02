@@ -24,9 +24,9 @@ interface IAdventureIsland {
         uint256 lastCollectPosition;
     }
 
-    function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) external payable;
-    function deposit(uint256 _pid, uint256 _amount) external payable;
-    function collect(uint256 _pid, uint256 _withdrawAmount) external;
+    function stakingByContract(uint256 _pid, uint256 _amount, address payable _forUser) external;
+    function staking(uint256 _pid, uint256 _amount) external;
+    function collect(uint256 _pid, uint256 _withdrawAmount, bool _flashUnstaking, bool _forOneToken, address _outToken) external;
 
     function getPoolStakingToken(uint256 _pid) view external returns(address);
 }

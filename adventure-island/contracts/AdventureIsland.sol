@@ -8,9 +8,10 @@ import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "./AdventureIslandViews.sol";
 import "./AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
-contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslandViews, RejectDirectETH {
+contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslandViews {
     using SafeMath for uint256;
     using Address for address payable;
+    using Calculation for uint256;
 
     constructor(
         address _owner,
@@ -34,21 +35,28 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         admins[_admin] = _admin;
     }
 
-    function depositByContract(uint256 _pid, uint256 _amount, address payable _forUser) public payable noReentrancy {
+    function stakingByContract(uint256 _pid, uint256 _amount, address payable _forUser) external noReentrancy {
         require(msg.sender.isContract(), "this interface only for contract call");
         require(!_forUser.isContract(), "reward user must not be a contract");
 
         UserInfo storage user = users[_pid][_forUser];
-        _deposit(_pid, user, _amount);
+        _staking(_pid, user, _amount, false);
     }
 
-    function deposit(uint256 _pid, uint256 _amount) public payable noReentrancy {
+    function staking(uint256 _pid, uint256 _amount) public noReentrancy {
         require(!msg.sender.isContract(), "this interface only for EOA call");
         UserInfo storage user = users[_pid][msg.sender];
-        _deposit(_pid, user, _amount);
+        _staking(_pid, user, _amount, false);
     }
 
-    function collect(uint256 _pid, uint256 _withdrawAmount) public noReentrancy {
+    function collect(
+        uint256 _pid,
+        uint256 _withdrawAmount,
+        bool _flashUnstaking,
+        bool _forOneToken,
+        address _outToken
+    ) public noReentrancy {
+
         PoolInfo storage pool = pools[_pid];
         UserInfo storage user = users[_pid][msg.sender];
 
@@ -56,26 +64,57 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         require(user.stakeIn > 0, "not deposit");
         require(user.stakeIn >= _withdrawAmount, "over withdraw");
 
-
         (bool valid, string memory info) = _canCollect(pool, user);
         require(valid, info);
 
-        _tryWithdraw(pool, user, _withdrawAmount);
+        if(_flashUnstaking) {
+            _tryFlashUnstaking(pool, user, _forOneToken, _outToken, _withdrawAmount);
+        } else {
+            _tryWithdraw(pool, user, _withdrawAmount);
+        }
 
         user.lastCollectPosition = block.number.sub(block.number.mod(pool.billingCycle));
 
         _updatePool(pool);
         uint256 userReward  = user.willCollect;
-        uint256 stillNeed = user.stakeIn.mul(pool.rewardPerShare).div(precision).sub(user.rewardDebt);
+        uint256 stillNeed = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
 
         rewardSupplier.mint(mainRewardToken, msg.sender, userReward);
 
         user.willCollect = 0;
         user.stakeIn = user.stakeIn.sub(_withdrawAmount);
-        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(precision);
+        user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION);
 
         pool.staked = pool.staked.sub(_withdrawAmount);
+    }
+
+    function flashStakingLP(uint256 _pid, uint256 _amount, address _inToken, address _outToken) external payable noReentrancy {
+        PoolInfo memory pool = pools[_pid];
+        uint256 fee = _amount.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
+        uint256 inAmount = _amount.sub(fee);
+        address lp = address(pool.stakingToken);
+        uint256 lpAmount = 0;
+        uint256 rewardAmount = 0;
+        address rewardBaseToken = _inToken;
+
+        if(_inToken == ZERO_ADDRESS) {
+            fee = msg.value.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
+            inAmount = msg.value.sub(fee);
+            lpAmount = uniConnector.flashGetLP.value(inAmount)(lp, _inToken, inAmount, _outToken);
+
+            rewardBaseToken = address(WETH);
+
+            platformFeeCollected[ZERO_ADDRESS] = platformFeeCollected[ZERO_ADDRESS].add(fee);
+        } else {
+            lpAmount = uniConnector.flashGetLP(lp, _inToken, inAmount, _outToken);
+            platformFeeCollected[_inToken] = platformFeeCollected[_inToken].add(fee);
+        }
+
+        rewardAmount = _flashStakingReward(msg.value, _getTokenPrice(rewardBaseToken));
+        rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
+        UserInfo storage user = users[_pid][msg.sender];
+        _staking(_pid, user, lpAmount, true);
     }
 
     function emergencyWithdrawal(uint256 _pid) external noReentrancy {
@@ -98,5 +137,11 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
 
     function signature() external pure returns (string memory) {
         return "provided by Seal-SC / www.sealsc.com";
+    }
+
+    function() external payable {
+        if(!ethPayer[msg.sender]) {
+            revert("not from valid payer");
+        }
     }
 }

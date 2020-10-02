@@ -11,14 +11,10 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return _poolsEnabled();
     }
 
-    function totalMined() public view returns(uint256) {
-        return _poolsOutput(0, block.number);
-    }
-
     function poolWeight(uint256 _pid) public view returns(uint256) {
         PoolInfo storage pool = pools[_pid];
 
-        return pool.weight.mul(precision).div(_poolsTotalWeight());
+        return pool.weight.mul(COMMON_PRECISION).div(_poolsTotalWeight());
     }
 
     function toBeCollectedOfPool(uint256 _pid) public view returns(uint256){
@@ -47,10 +43,10 @@ contract AdventureIslandViews is AdventureIslandInternal {
         }
 
         uint256 teBeCollect = _toBeCollected(pool, pool.lastRewardBlock, block.number);
-        uint256 rewardPerShare = pool.rewardPerShare.add(teBeCollect.mul(precision).div(pool.staked));
+        uint256 rewardPerShare = pool.rewardPerShare.add(teBeCollect.mul(COMMON_PRECISION).div(pool.staked));
 
         uint256 userReward  = user.willCollect;
-        uint256 stillNeed = user.stakeIn.mul(rewardPerShare).div(precision).sub(user.rewardDebt);
+        uint256 stillNeed = user.stakeIn.mul(rewardPerShare).div(COMMON_PRECISION).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
 
         return userReward;
