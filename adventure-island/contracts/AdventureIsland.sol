@@ -99,6 +99,8 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         uint256 rewardAmount = 0;
         address rewardBaseToken = _inToken;
 
+        _approveFlashStaking(IERC20(_inToken), IERC20(_outToken), pool.stakingToken);
+
         if(_inToken == ZERO_ADDRESS) {
             fee = msg.value.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
             inAmount = msg.value.sub(fee);
@@ -108,12 +110,12 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
 
             platformFeeCollected[ZERO_ADDRESS] = platformFeeCollected[ZERO_ADDRESS].add(fee);
         } else {
+            IERC20(_inToken).safeTransferFrom(msg.sender, address(this), _amount);
             lpAmount = uniConnector.flashGetLP(lp, _inToken, inAmount, _outToken);
             platformFeeCollected[_inToken] = platformFeeCollected[_inToken].add(fee);
         }
 
-        uint256 tokenValue = msg.value;
-        rewardAmount = _flashStakingReward(address(WETH), tokenValue, _getTokenPrice(rewardBaseToken));
+        rewardAmount = _flashStakingReward(rewardBaseToken, inAmount, _getTokenPrice(rewardBaseToken));
         rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
         UserInfo storage user = users[_pid][msg.sender];
         _staking(_pid, user, lpAmount, true);

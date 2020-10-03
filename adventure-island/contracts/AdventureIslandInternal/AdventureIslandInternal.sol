@@ -86,21 +86,38 @@ contract AdventureIslandInternal is AdventureIslandData {
         return (amountA, amountB);
     }
 
-    function _getTokenPrice(address _token) view public returns(uint256) {
-        if(_token == address(USDT)) {
-            return USDT_PRECISION;
-        }
+    function _getWETHPrice() view internal returns(uint256) {
         address[] memory path = new address[](2);
-        path[0] = address(_token);
+        path[0] = address(WETH);
         path[1] = address(USDT);
 
-        uint256 oneToken = 1 * (10 ** uint256(IERC20(_token).decimals()));
+        uint256 oneToken = COMMON_PRECISION;
 
         uint256[] memory price = UNI_V2_ROUTER.getAmountsOut(oneToken, path);
         return price[1];
     }
 
-    function _flashStakingReward(address _forToken, uint256 _amount, uint256 _price) view internal returns(uint256) {
+    function _getTokenPrice(address _token) view public returns(uint256) {
+        if(_token == address(USDT)) {
+            return USDT_PRECISION;
+        }
+
+        if(_token == address(WETH)) {
+            return _getWETHPrice();
+        }
+
+        address[] memory path = new address[](3);
+        path[0] = address(_token);
+        path[1] = address(WETH);
+        path[2] = address(USDT);
+
+        uint256 oneToken = 1 * (10 ** uint256(IERC20(_token).decimals()));
+
+        uint256[] memory price = UNI_V2_ROUTER.getAmountsOut(oneToken, path);
+        return price[2];
+    }
+
+    function _flashStakingReward(address _forToken, uint256 _amount, uint256 _price) view public returns(uint256) {
         uint256 tokenDecimals = 10 ** uint256(IERC20(_forToken).decimals());
         uint256 rewardTokenDecimals = 10 ** uint256(IERC20(mainRewardToken).decimals());
         if(tokenDecimals > rewardTokenDecimals) {
@@ -112,11 +129,22 @@ contract AdventureIslandInternal is AdventureIslandData {
         return _price.mul(_amount).percentageMul(flashStakingRewardBP, BASIS_POINT_PRECISION).div(USDT_PRECISION);
     }
 
-    function _approveConnector(IERC20 _lp) internal {
-        uint256 approved = _lp.allowance(address(this), address(uniConnector));
-        if(approved == 0) {
-            _lp.approve(address(uniConnector), MAX_UINT256);
+    function _safeApprove(IERC20 _token, address _spender) internal {
+        if(address(_token) == ZERO_ADDRESS) {
+            _token = WETH;
         }
+
+        uint256 approved = _token.allowance(address(this), _spender);
+        if(approved == 0) {
+            _token.safeApprove(_spender, MAX_UINT256);
+        }
+    }
+
+    function _approveFlashStaking(IERC20 _tokeA, IERC20 _tokenB, IERC20 _stakingToken) internal {
+        address conn = address(uniConnector);
+        _safeApprove(_tokeA, conn);
+        _safeApprove(_tokenB, conn);
+        _safeApprove(_stakingToken, conn);
     }
 
     function _tryFlashUnstaking(
@@ -139,7 +167,7 @@ contract AdventureIslandInternal is AdventureIslandData {
             return 0;
         }
 
-        _approveConnector(pool.stakingToken);
+        _approveFlashStaking(IERC20(tokenA), IERC20(tokenB), pool.stakingToken);
 
         uint256 amountA;
         uint256 amountB;
@@ -159,20 +187,31 @@ contract AdventureIslandInternal is AdventureIslandData {
 
         (amountA, amountB) = _chargeFlashUnstakingFee(tokenA, amountA, tokenB, amountB);
 
-        if(amountA > 0) {
-            if(tokenA == ZERO_ADDRESS) {
+        if(!_forOneToken) {
+            if(amountA > 0) {
+                if(tokenA == ZERO_ADDRESS) {
+                    msg.sender.sendValue(amountA);
+                    rewardAmount = _flashStakingReward(address(WETH), amountA, _getTokenPrice(address(WETH)));
+                } else {
+                    IERC20(tokenA).safeTransfer(msg.sender, amountA);
+                    rewardAmount = _flashStakingReward(tokenA, amountA, _getTokenPrice(tokenA));
+                }
+            }
+
+            if(amountB > 0) {
+                IERC20(tokenB).safeTransfer(msg.sender, amountB);
+                uint256 rewardOfB = _flashStakingReward(tokenB, amountB, _getTokenPrice(tokenB));
+                rewardAmount = rewardAmount.add(rewardOfB);
+            }
+        } else {
+            if(_outToken == ZERO_ADDRESS) {
                 msg.sender.sendValue(amountA);
                 rewardAmount = _flashStakingReward(address(WETH), amountA, _getTokenPrice(address(WETH)));
             } else {
-                IERC20(tokenA).safeTransfer(msg.sender, amountA);
-                rewardAmount = _flashStakingReward(tokenA, amountA, _getTokenPrice(tokenA));
+                IERC20(_outToken).safeTransfer(msg.sender, amountB);
+                uint256 rewardOfB = _flashStakingReward(_outToken, amountB, _getTokenPrice(_outToken));
+                rewardAmount = rewardAmount.add(rewardOfB);
             }
-        }
-
-        if(amountB > 0) {
-            IERC20(tokenB).safeTransfer(msg.sender, amountB);
-            uint256 rewardOfB = _flashStakingReward(tokenB, amountB, _getTokenPrice(_outToken));
-            rewardAmount = rewardAmount.add(rewardOfB);
         }
 
         rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
@@ -222,6 +261,10 @@ contract AdventureIslandInternal is AdventureIslandData {
         (bool status, string memory info) = _poolsStatusCheck();
         if(!status) {
             return (status, info);
+        }
+
+        if(block.number < pool.startBlock) {
+            return (false, "pool is not started");
         }
 
         if(pool.closed) {
@@ -359,7 +402,7 @@ contract AdventureIslandInternal is AdventureIslandData {
     }
 
     function _mintTeamReward(uint256 _amount) internal {
-        if(team != ZERO_ADDRESS && !teamRewardPermanentlyDisabled) {
+        if(team == ZERO_ADDRESS || teamRewardPermanentlyDisabled) {
             return;
         }
         rewardSupplier.mint(mainRewardToken, team, _amount.percentageMul(teamRewardBP, BASIS_POINT_PRECISION));

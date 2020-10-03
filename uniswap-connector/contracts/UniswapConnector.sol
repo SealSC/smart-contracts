@@ -106,16 +106,13 @@ contract UniswapConnector is IUniswapConnector, UniswapConnectorAdmin, UniswapCo
         uint256 _amount,
         address _outToken) external payable validLP(_lp) returns(uint256)  {
 
-        if(_inToken == ZERO_ADDRESS) {
-            address thisAddr = address(this);
-            (uint256 swapBack, uint256 swapVal) = _prepareToken(_lp, ZERO_ADDRESS, _outToken, 0, thisAddr);
-            return _getLP(_lp, ZERO_ADDRESS, _outToken, msg.value.sub(swapVal), swapBack, msg.sender);
-        } else {
+        if(_inToken != ZERO_ADDRESS && _outToken != ZERO_ADDRESS) {
             require(msg.value == 0, "not accept eth in token2token swap");
-            address thisAddr = address(this);
-            (uint256 swapBack, uint256 swapVal) = _prepareToken(_lp, _inToken, _outToken, _amount, thisAddr);
-            return _getLP(_lp, _inToken, _outToken, _amount.sub(swapVal), swapBack, msg.sender);
         }
+
+        address thisAddr = address(this);
+        (uint256 swapBack, uint256 swapVal) = _prepareToken(_lp, _inToken, _outToken, _amount, thisAddr);
+        return _getLP(_lp, _inToken, _outToken, _amount.sub(swapVal), swapBack, msg.sender);
     }
 
     function lpToPair(address _lp) view external returns(address, address) {

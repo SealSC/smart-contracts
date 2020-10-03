@@ -79,6 +79,24 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         return (swapBack, swapVal);
     }
 
+    function _swapTokenForETH(address _pair, address _inToken, uint256 _inAmount, address _thisAddr) internal returns(uint256, uint256) {
+        uint256 beforeSwap = address(this).balance;
+
+        uint256 swapVal = _swapInVal(_inAmount, _inToken, _pair);
+
+        address[] memory path = new address[](2);
+        path[0] =  _inToken;
+        path[1] =  address(weth);
+
+        uint256[] memory amounts = router.getAmountsOut(swapVal, path);
+        router.swapTokensForExactETH(amounts[amounts.length - 1], swapVal, path, _thisAddr, _swapDeadline());
+
+        uint256 afterSwap = address(this).balance;
+        uint256 swapBack = afterSwap.sub(beforeSwap);
+
+        return (swapBack, swapVal);
+    }
+
     function _prepareToken(
         address _lp,
         address _inToken,
@@ -93,13 +111,15 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         }
 
         if(_inToken != ZERO_ADDRESS  && _outToken != ZERO_ADDRESS) {
-            IERC20 inToken = IERC20(_inToken);
-            inToken.safeTransferFrom(msg.sender, _thisAddr, _amount);
+            IERC20(_inToken).safeTransferFrom(msg.sender, _thisAddr, _amount);
             return _swapToken(_lp, _inToken, _outToken, _amount, _thisAddr);
         } else if(_inToken == ZERO_ADDRESS && _outToken != ZERO_ADDRESS) {
             return _swapETHForToken(_lp, _outToken, _thisAddr);
+        } else if(_inToken != ZERO_ADDRESS && _outToken == ZERO_ADDRESS) {
+            IERC20(_inToken).safeTransferFrom(msg.sender, _thisAddr, _amount);
+            return _swapTokenForETH(_lp, _inToken, _amount, _thisAddr);
         } else {
-            revert("eth swap out not supported");
+            revert("eth swap eth not supported");
         }
     }
 
@@ -115,10 +135,14 @@ contract UniswapConnectorInternal is UniswapConnectorData {
 
         uint256 beforeAddLPAmount = lpToken.balanceOf(_to);
 
-        if(_inToken != ZERO_ADDRESS) {
+        if(_inToken != ZERO_ADDRESS && _outToken != ZERO_ADDRESS) {
             _addLiquidity(_inToken, _outToken, _inVal, _swapBack, _to);
-        } else {
+        } else if(_inToken == ZERO_ADDRESS && _outToken != ZERO_ADDRESS) {
             _addLiquidityETH(_inVal, _outToken, _swapBack, _to);
+        } else if(_inToken != ZERO_ADDRESS && _outToken == ZERO_ADDRESS){
+            _addLiquidityETH(_swapBack, _inToken, _inVal, _to);
+        } else {
+            revert("eth for eth not support");
         }
 
         uint256 afterAddLPAmount = lpToken.balanceOf(_to);
