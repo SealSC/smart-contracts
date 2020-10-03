@@ -4,7 +4,6 @@ import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/Address.sol";
 import "../../contract-libs/seal-sc/Utils.sol";
-import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "./AdventureIslandViews.sol";
 import "./AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
@@ -43,7 +42,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         _staking(_pid, user, _amount, false);
     }
 
-    function staking(uint256 _pid, uint256 _amount) public noReentrancy {
+    function staking(uint256 _pid, uint256 _amount) external noReentrancy {
         require(!msg.sender.isContract(), "this interface only for EOA call");
         UserInfo storage user = users[_pid][msg.sender];
         _staking(_pid, user, _amount, false);
@@ -87,6 +86,8 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION);
 
         pool.staked = pool.staked.sub(_withdrawAmount);
+
+        _mintTeamReward(userReward);
     }
 
     function flashStakingLP(uint256 _pid, uint256 _amount, address _inToken, address _outToken) external payable noReentrancy {
@@ -111,7 +112,8 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
             platformFeeCollected[_inToken] = platformFeeCollected[_inToken].add(fee);
         }
 
-        rewardAmount = _flashStakingReward(msg.value, _getTokenPrice(rewardBaseToken));
+        uint256 tokenValue = msg.value;
+        rewardAmount = _flashStakingReward(address(WETH), tokenValue, _getTokenPrice(rewardBaseToken));
         rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
         UserInfo storage user = users[_pid][msg.sender];
         _staking(_pid, user, lpAmount, true);

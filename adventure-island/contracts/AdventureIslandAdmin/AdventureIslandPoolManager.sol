@@ -85,4 +85,10 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
             pool.weight = _newWeights[i];
         }
     }
+
+    function updateFlashStakingRewardBP(uint256 _newBP) external onlyAdmin {
+        require(_newBP <= BASIS_POINT_PRECISION.mul(100), "reward basis point is too big");
+
+        flashStakingRewardBP = _newBP;
+    }
 }

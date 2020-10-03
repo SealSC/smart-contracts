@@ -13,7 +13,7 @@ contract AdventureIslandData is IAdventureIsland, Constants {
     IERC20TokenSupplier public rewardSupplier;
     IUniswapConnector public uniConnector;
 
-    mapping(address=>bool) ethPayer;
+    mapping(address=>bool) public ethPayer;
 
     uint256 public rewardPerBlock;
     uint256 public minRewardPerBlock;
@@ -22,14 +22,13 @@ contract AdventureIslandData is IAdventureIsland, Constants {
     uint256 public collectedReward;
 
     address public team;
-    uint256 public lastTotalSupplyWithoutTeam;
-    uint256 public teamRewarded;
+    uint256 public teamRewardBP = 1000; // 10% | extra reward mint to team when user collect;
     bool public teamRewardPermanentlyDisabled = false;
 
     bool public globalOpen = true;
     uint256 public globalStartBlock  = ~uint256(0);
 
     mapping(address=>uint256) public platformFeeCollected;
-    uint256 public platformFeeBP = 100; // 1% flash staking fee
-    uint256 public flashStakingRewardBP = 1000; // flash staking reward basis point
+    uint256 public platformFeeBP = 100; // 1% | flash staking fee
+    uint256 public flashStakingRewardBP = 100; // 1% | flash staking reward basis point
 }

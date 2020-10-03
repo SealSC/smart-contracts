@@ -100,7 +100,15 @@ contract AdventureIslandInternal is AdventureIslandData {
         return price[1];
     }
 
-    function _flashStakingReward(uint256 _amount, uint256 _price) view internal returns(uint256) {
+    function _flashStakingReward(address _forToken, uint256 _amount, uint256 _price) view internal returns(uint256) {
+        uint256 tokenDecimals = 10 ** uint256(IERC20(_forToken).decimals());
+        uint256 rewardTokenDecimals = 10 ** uint256(IERC20(mainRewardToken).decimals());
+        if(tokenDecimals > rewardTokenDecimals) {
+            _amount = _amount.mul(tokenDecimals.div(rewardTokenDecimals));
+        } else if(tokenDecimals < rewardTokenDecimals) {
+            _amount = _amount.mul(rewardTokenDecimals.div(tokenDecimals));
+        }
+
         return _price.mul(_amount).percentageMul(flashStakingRewardBP, BASIS_POINT_PRECISION).div(USDT_PRECISION);
     }
 
@@ -154,16 +162,16 @@ contract AdventureIslandInternal is AdventureIslandData {
         if(amountA > 0) {
             if(tokenA == ZERO_ADDRESS) {
                 msg.sender.sendValue(amountA);
-                rewardAmount = _flashStakingReward(amountA, _getTokenPrice(address(WETH)));
+                rewardAmount = _flashStakingReward(address(WETH), amountA, _getTokenPrice(address(WETH)));
             } else {
                 IERC20(tokenA).safeTransfer(msg.sender, amountA);
-                rewardAmount = _flashStakingReward(amountA, _getTokenPrice(tokenA));
+                rewardAmount = _flashStakingReward(tokenA, amountA, _getTokenPrice(tokenA));
             }
         }
 
         if(amountB > 0) {
             IERC20(tokenB).safeTransfer(msg.sender, amountB);
-            uint256 rewardOfB = _flashStakingReward(amountB, _getTokenPrice(_outToken));
+            uint256 rewardOfB = _flashStakingReward(tokenB, amountB, _getTokenPrice(_outToken));
             rewardAmount = rewardAmount.add(rewardOfB);
         }
 
@@ -348,5 +356,12 @@ contract AdventureIslandInternal is AdventureIslandData {
         pool.staked = pool.staked.add(amount);
         user.stakeIn = user.stakeIn.add(amount);
         user.rewardDebt = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION);
+    }
+
+    function _mintTeamReward(uint256 _amount) internal {
+        if(team != ZERO_ADDRESS && !teamRewardPermanentlyDisabled) {
+            return;
+        }
+        rewardSupplier.mint(mainRewardToken, team, _amount.percentageMul(teamRewardBP, BASIS_POINT_PRECISION));
     }
 }

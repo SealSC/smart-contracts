@@ -33,7 +33,8 @@ contract UniswapConnector is IUniswapConnector, UniswapConnectorAdmin, UniswapCo
         address tokenB = supportedPair[_lp][1];
 
         IERC20(_lp).safeTransferFrom(msg.sender, address(this), _amount);
-        (uint256 amountA, uint256 amountB) = _removeLiquidity(tokenA, tokenB, _amount);
+        _removeLiquidity(tokenA, tokenB, _amount);
+        (uint256 amountA, uint256 amountB) = _amountOfTokens(tokenA, tokenB);
 
         if(_externalCall) {
             if(tokenA == ZERO_ADDRESS) {
