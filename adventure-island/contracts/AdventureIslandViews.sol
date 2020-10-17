@@ -35,6 +35,10 @@ contract AdventureIslandViews is AdventureIslandInternal {
             return 0;
         }
 
+        if(pool.staked == 0) {
+            return 0;
+        }
+
         uint256 toBeCollect = _toBeCollected(pool, pool.lastRewardBlock, block.number);
         uint256 rewardPerShare = pool.rewardPerShare.add(toBeCollect.mul(COMMON_PRECISION).div(pool.staked));
 
@@ -44,6 +48,10 @@ contract AdventureIslandViews is AdventureIslandInternal {
     function toBeCollectedOf(uint256 _pid, address _user) public view returns(uint256, uint256, uint256, uint256) {
         PoolInfo storage pool = pools[_pid];
         UserInfo storage user = users[_pid][_user];
+
+        if(pool.staked == 0) {
+            return (0, 0, 0, 0);
+        }
 
         if(pool.billingCycle == 0) {
             return (0, 0, 0, 0);
