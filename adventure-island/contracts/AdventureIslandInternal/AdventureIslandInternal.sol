@@ -16,7 +16,7 @@ contract AdventureIslandInternal is AdventureIslandData {
         return globalOpen && block.number >= globalStartBlock;
     }
 
-    function _poolsTotalWeight() public view returns(uint256) {
+    function _poolsTotalWeight() internal view returns(uint256) {
         uint256 poolCnt = pools.length;
         uint256 totalWeight = 0;
 
@@ -97,7 +97,7 @@ contract AdventureIslandInternal is AdventureIslandData {
         return price[1];
     }
 
-    function _getTokenPrice(address _token) view public returns(uint256) {
+    function _getTokenPrice(address _token) view internal returns(uint256) {
         if(_token == address(USDT)) {
             return USDT_PRECISION;
         }
@@ -117,7 +117,7 @@ contract AdventureIslandInternal is AdventureIslandData {
         return price[2];
     }
 
-    function _flashStakingReward(address _forToken, uint256 _amount, uint256 _price) view public returns(uint256) {
+    function _flashStakingReward(address _forToken, uint256 _amount, uint256 _price) view internal returns(uint256) {
         uint256 tokenDecimals = 10 ** uint256(IERC20(_forToken).decimals());
         uint256 rewardTokenDecimals = 10 ** uint256(IERC20(mainRewardToken).decimals());
         if(tokenDecimals > rewardTokenDecimals) {
