@@ -39,10 +39,7 @@ contract AdventureIslandViews is AdventureIslandInternal {
             return 0;
         }
 
-        uint256 toBeCollect = _toBeCollected(pool, pool.lastRewardBlock, block.number);
-        uint256 rewardPerShare = pool.rewardPerShare.add(toBeCollect.mul(COMMON_PRECISION).div(pool.staked));
-
-        return block.number.sub(pool.lastRewardBlock).mul(rewardPerShare).div(COMMON_PRECISION);
+        return _toBeCollected(pool, pool.lastRewardBlock, block.number);
     }
 
     function toBeCollectedOf(uint256 _pid, address _user) public view returns(uint256, uint256, uint256, uint256) {
@@ -61,11 +58,11 @@ contract AdventureIslandViews is AdventureIslandInternal {
             return (0, 0, 0, 0);
         }
 
-        uint256 toBeCollect = toBeCollectedOfPool(_pid);
-        uint256 rewardPerShare = pool.rewardPerShare.add(toBeCollect.mul(COMMON_PRECISION).div(pool.staked));
+        uint256 poolToBeCollect = toBeCollectedOfPool(_pid);
+        uint256 rewardPerShare = pool.rewardPerShare.add(poolToBeCollect.mul(COMMON_PRECISION).div(pool.staked));
 
         if(user.stakeIn == 0) {
-            return (0, toBeCollect, 0, pool.staked);
+            return (0, poolToBeCollect, 0, pool.staked);
         }
 
 
@@ -73,7 +70,7 @@ contract AdventureIslandViews is AdventureIslandInternal {
         uint256 stillNeed = user.stakeIn.mul(rewardPerShare).div(COMMON_PRECISION).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
 
-        return (userReward, toBeCollect, user.stakeIn, pool.staked);
+        return (userReward, poolToBeCollect, user.stakeIn, pool.staked);
     }
 
     function getPoolStakingToken(uint256 _pid) external view returns(address) {
