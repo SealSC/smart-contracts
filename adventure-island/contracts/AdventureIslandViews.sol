@@ -79,4 +79,23 @@ contract AdventureIslandViews is AdventureIslandInternal {
     function getPoolStakingToken(uint256 _pid) external view returns(address) {
         return address(pools[_pid].stakingToken);
     }
+
+    function getStakedInfoOf(address userAddr) external view returns(address[] memory, uint256[] memory, uint256[] memory) {
+        uint256 poolLength = pools.length;
+
+        address[] memory stakeTokenList = new address[](poolLength);
+        uint256[] memory stakeTokenTotalSupply = new uint256[](poolLength);
+        uint256[] memory stakedAmountList = new uint256[](poolLength);
+
+        for(uint256 i=0; i<poolLength; i++) {
+            PoolInfo memory p = pools[i];
+            UserInfo memory u = users[i][userAddr];
+
+            stakeTokenList[i] = address (p.stakingToken);
+            stakeTokenTotalSupply[i] = p.stakingToken.totalSupply();
+            stakedAmountList[i] = u.stakeIn;
+        }
+
+        return (stakeTokenList, stakeTokenTotalSupply, stakedAmountList);
+    }
 }
