@@ -11,7 +11,7 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return _poolsEnabled();
     }
 
-    function getToBeCollectListOf(address user) external view returns(uint256[] memory, uint256[] memory, uint256[] memory, uint256[] memory) {
+    function getToBeCollectListOf(address user) public view returns(uint256[] memory, uint256[] memory, uint256[] memory, uint256[] memory) {
         uint256[] memory userReward = new uint256[](pools.length);
         uint256[] memory poolReward = new uint256[](pools.length);
         uint256[] memory userStaked = new uint256[](pools.length);
@@ -77,22 +77,26 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return address(pools[_pid].stakingToken);
     }
 
-    function getStakedInfoOf(address userAddr) external view returns(address[] memory, uint256[] memory, uint256[] memory) {
+    function getStakedInfoOf(address userAddr) external view returns(address[] memory, uint256[] memory, uint256[] memory, uint256[] memory,  uint256[] memory,  uint256[] memory) {
         uint256 poolLength = pools.length;
 
         address[] memory stakeTokenList = new address[](poolLength);
         uint256[] memory stakeTokenTotalSupply = new uint256[](poolLength);
-        uint256[] memory stakedAmountList = new uint256[](poolLength);
+
+        uint256[] memory userStaked = new uint256[](poolLength);
+        uint256[] memory userReward = new uint256[](poolLength);
+        uint256[] memory poolStaked = new uint256[](poolLength);
+        uint256[] memory poolReward = new uint256[](poolLength);
+
+        (userReward, poolReward, userStaked, poolStaked) = getToBeCollectListOf(userAddr);
 
         for(uint256 i=0; i<poolLength; i++) {
             PoolInfo memory p = pools[i];
-            UserInfo memory u = users[i][userAddr];
 
             stakeTokenList[i] = address (p.stakingToken);
             stakeTokenTotalSupply[i] = p.stakingToken.totalSupply();
-            stakedAmountList[i] = u.stakeIn;
         }
 
-        return (stakeTokenList, stakeTokenTotalSupply, stakedAmountList);
+        return (stakeTokenList, stakeTokenTotalSupply, userReward, poolReward, userStaked, poolStaked);
     }
 }
