@@ -17,7 +17,6 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
         uint256 _minStakeIn,
         uint256 _maxStakeIn
     ) external onlyAdmin {
-        require(_startBlock >= globalStartBlock, "must after or at pools start block");
         require(_billingCycle > 0, "pool billing cycle must not be zero");
 
         uint256 start = _startBlock;
@@ -27,6 +26,8 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
         } else {
             require(start >= block.number, "start must after or on the tx block");
         }
+
+        require(_startBlock >= globalStartBlock, "must after or at pools start block");
 
         if(_endBlock > 0) {
             require(_endBlock > _startBlock);

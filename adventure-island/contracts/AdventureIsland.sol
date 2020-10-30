@@ -19,12 +19,17 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         address _rewardSupplier,
         uint256 _rewardPerBlock,
         bool _checkRewardDecimals,
-        uint256 _rewardIntegerPart)
+        uint256 _rewardIntegerPart,
+        bool _startNow)
     public Ownable(_owner) {
 
         mainRewardToken = _mainRewardToken;
         rewardSupplier = IERC20TokenSupplier(_rewardSupplier);
         rewardPerBlock = _rewardPerBlock;
+
+        if(_startNow) {
+            globalStartBlock = block.number;
+        }
 
         if(_checkRewardDecimals) {
             IERC20 mainToken = IERC20(_mainRewardToken);
