@@ -35,7 +35,8 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
 
         _updatePools();
 
-        PoolInfo memory newPool = PoolInfo({
+        PoolInfo memory pool = PoolInfo({
+        pid: allPoolsCount,
         stakingToken: IERC20(_stakeToken),
         startBlock: start,
         endBlock: _endBlock,
@@ -49,18 +50,18 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
         closed: false
         });
 
-        pools.push(newPool);
+        appendPool(pool);
     }
 
     function setPoolStakeToken(uint256 _pid, address _token) public onlyAdmin {
-        PoolInfo storage pool = pools[_pid];
+        PoolInfo storage pool = allPools[_pid];
         require(address(pool.stakingToken) == DUMMY_ADDRESS, "address already set");
 
         pool.stakingToken = IERC20(_token);
     }
 
     function removePool(uint256 _pid) public onlyAdmin {
-        PoolInfo storage pool = pools[_pid];
+        PoolInfo storage pool = allPools[_pid];
         require(pool.billingCycle != 0, "no such pool");
 
         _updatePools();
@@ -69,6 +70,8 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
         pool.closed = true;
         pool.lastRewardBlock = block.number;
         pool.endBlock = block.number;
+
+        removePoolFromList(_pid);
     }
 
     function setPoolWeight(uint256[] calldata _pids, uint256[] calldata _newWeights) external onlyAdmin {
@@ -79,7 +82,7 @@ contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIsla
 
         require(pidLen == newWeightLen, "invalid parameter");
         for(uint256 i=0; i<pidLen; i++) {
-            PoolInfo storage pool = pools[_pids[i]];
+            PoolInfo storage pool = allPools[_pids[i]];
             require(pool.billingCycle != 0, "no such pool");
             require(!pool.closed, "pool already closed");
 

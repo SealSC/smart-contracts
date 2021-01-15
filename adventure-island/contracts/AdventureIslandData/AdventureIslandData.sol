@@ -1,12 +1,12 @@
-pragma solidity ^0.5.6;
+pragma solidity ^0.5.9;
 
 import "../interface/IAdventureIsland.sol";
 import "../../../contract-libs/seal-sc/Constants.sol";
 import "../../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.sol";
 import "../../../uniswap-connector/contracts/interface/IUniswapConnector.sol";
+import "./AdventureIslandPools.sol";
 
-contract AdventureIslandData is IAdventureIsland, Constants {
-    PoolInfo[] public pools;
+contract AdventureIslandData is IAdventureIsland, AdventureIslandPools, Constants {
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 
     address public mainRewardToken;

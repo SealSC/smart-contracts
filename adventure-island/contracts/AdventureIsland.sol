@@ -61,7 +61,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         address _outToken
     ) public noReentrancy {
 
-        PoolInfo storage pool = pools[_pid];
+        PoolInfo storage pool = allPools[_pid];
         UserInfo storage user = users[_pid][msg.sender];
 
         require(pool.billingCycle > 0, "no such pool");
@@ -96,7 +96,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
     }
 
     function flashStakingLP(uint256 _pid, uint256 _amount, address _inToken, address _outToken) external payable noReentrancy {
-        PoolInfo memory pool = pools[_pid];
+        PoolInfo memory pool = allPools[_pid];
         uint256 fee = _amount.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
         uint256 inAmount = _amount.sub(fee);
         address lp = address(pool.stakingToken);
@@ -127,7 +127,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
     }
 
     function emergencyWithdrawal(uint256 _pid) external noReentrancy {
-        PoolInfo storage pool = pools[_pid];
+        PoolInfo storage pool = allPools[_pid];
         UserInfo storage user = users[_pid][msg.sender];
 
         require(pool.billingCycle > 0, "no such pool");

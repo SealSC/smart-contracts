@@ -12,7 +12,7 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
     }
 
     function _poolsTotalWeight() internal view returns(uint256) {
-        uint256 poolCnt = pools.length;
+        uint256 poolCnt = validPoolList.length;
         uint256 totalWeight = 0;
 
         if(!_poolsEnabled()) {
@@ -20,7 +20,7 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
         }
 
         for(uint256 i=0; i<poolCnt; i++) {
-            PoolInfo memory pool = pools[i];
+            PoolInfo memory pool = validPoolList[i];
             if(pool.closed) {
                 continue;
             }
@@ -184,13 +184,13 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
     }
 
     function _updatePools() internal {
-        uint256 poolLen = pools.length;
+        uint256 poolLen = validPoolList.length;
         if(block.number < globalStartBlock) {
             return;
         }
 
         for(uint256 i=0; i<poolLen; i++) {
-            PoolInfo storage pool = pools[i];
+            PoolInfo storage pool = validPoolList[i];
             if(pool.closed || block.number < pool.startBlock) {
                 continue;
             }
@@ -201,7 +201,7 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
 
 
     function _staking(uint256 pid, UserInfo storage user, uint256 amount, bool isFlashStaking) internal {
-        PoolInfo storage pool = pools[pid];
+        PoolInfo storage pool = allPools[pid];
         require(pool.billingCycle > 0, "no such pool");
         require(!pool.closed, "closed pool");
         require(address(pool.stakingToken) != DUMMY_ADDRESS, "stake token not set");
