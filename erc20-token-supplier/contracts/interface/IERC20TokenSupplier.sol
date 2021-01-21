@@ -1,15 +1,19 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
+
+enum SupplyMode {
+    Transfer,
+    Mineable
+}
+
+struct TokenInfo {
+    address    token;
+    SupplyMode supplyMode;
+}
 
 interface IERC20TokenSupplier {
-    enum SupplyMode {
-        Transfer,
-        Mineable
-    }
 
-    struct TokenInfo {
-        address    token;
-        SupplyMode supplyMode;
-    }
 
     function tokenCount() external view returns(uint256);
     function getTokenSupply(address _token) external view returns(uint256);

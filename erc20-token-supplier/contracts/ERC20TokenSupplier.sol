@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
@@ -10,7 +12,7 @@ import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "../../contract-libs/seal-sc/Utils.sol";
 
-contract ERC20TokenSupplier is Ownable, Mutex, IERC20TokenSupplier, Constants, RejectDirectETH {
+contract ERC20TokenSupplier is Ownable, Mutex, Constants, RejectDirectETH {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
