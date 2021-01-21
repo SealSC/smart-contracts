@@ -1,16 +1,22 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/ERC20.sol";
-import "../../contract-libs/open-zeppelin/ERC20Detailed.sol";
 import "../../contract-libs/seal-sc/Constants.sol";
 import "../../contract-libs/seal-sc/Calculation.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
-import "./interface/IMineableERC20.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
+import "../../contract-libs/open-zeppelin/Ownable.sol";
 
-contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constants, SimpleSealSCSignature, RejectDirectETH {
+contract MineableERC20 is ERC20, Ownable, Constants, SimpleSealSCSignature, RejectDirectETH {
     using SafeMath for uint256;
     using Calculation for uint256;
+
+    struct MinterInfo {
+        address minter;
+        uint256 weight;
+    }
 
     mapping(address=>MinterInfo) public minters;
     mapping(address=>bool) public admins;
@@ -31,7 +37,7 @@ contract MineableERC20 is IMineableERC20, ERC20, ERC20Detailed, Ownable, Constan
         string memory _name,
         string memory _symbol,
         uint8 _decimals)
-    public ERC20Detailed(_name, _symbol, _decimals) Ownable(_owner){
+    public ERC20(_name, _symbol, _decimals) Ownable(_owner){
         require(_owner != ZERO_ADDRESS);
         require(_admin != ZERO_ADDRESS);
 

@@ -1,7 +1,9 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 contract RejectDirectETH {
-    function() external {
+    receive() external payable {
         revert("refuse to directly transfer ETH in");
     }
 }

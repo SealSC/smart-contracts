@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 contract Mutex {
     bool internal _utils_mutex_locked;

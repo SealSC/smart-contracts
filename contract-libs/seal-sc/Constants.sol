@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../open-zeppelin/IERC20.sol";
 import "../uniswap/IUniswapV2Factory.sol";
