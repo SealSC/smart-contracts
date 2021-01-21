@@ -8,15 +8,11 @@ import "../../contract-libs/seal-sc/Calculation.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "../../contract-libs/open-zeppelin/Ownable.sol";
+import "./interface/IMineableERC20.sol";
 
 contract MineableERC20 is ERC20, Ownable, Constants, SimpleSealSCSignature, RejectDirectETH {
     using SafeMath for uint256;
     using Calculation for uint256;
-
-    struct MinterInfo {
-        address minter;
-        uint256 weight;
-    }
 
     mapping(address=>MinterInfo) public minters;
     mapping(address=>bool) public admins;
