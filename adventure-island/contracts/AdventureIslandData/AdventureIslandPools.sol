@@ -1,9 +1,26 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
 
-import "../interface/IAdventureIslandPools.sol";
+pragma solidity ^0.6.0;
+
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
+import "../../../contract-libs/open-zeppelin/IERC20.sol";
 
-contract AdventureIslandPools is IAdventureIslandPools {
+struct PoolInfo {
+    IERC20 stakingToken;
+    uint256 pid;
+    uint256 startBlock;
+    uint256 endBlock;
+    uint256 billingCycle;
+    uint256 weight;
+    uint256 staked;
+    uint256 lastRewardBlock;
+    uint256 rewardPerShare;
+    uint256 minStakeIn;
+    uint256 maxStakeIn;
+    bool closed;
+}
+
+contract AdventureIslandPools {
     using SafeMath for uint256;
 
     mapping (uint256=>PoolInfo) public allPools;
@@ -25,6 +42,6 @@ contract AdventureIslandPools is IAdventureIslandPools {
             }
         }
 
-        validPoolList.length--;
+        validPoolList.pop();
     }
 }

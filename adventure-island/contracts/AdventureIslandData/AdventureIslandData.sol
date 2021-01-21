@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../interface/IAdventureIsland.sol";
 import "../../../contract-libs/seal-sc/Constants.sol";
@@ -6,7 +8,7 @@ import "../../../erc20-token-supplier/contracts/interface/IERC20TokenSupplier.so
 import "../../../uniswap-connector/contracts/interface/IUniswapConnector.sol";
 import "./AdventureIslandPools.sol";
 
-contract AdventureIslandData is IAdventureIsland, AdventureIslandPools, Constants {
+contract AdventureIslandData is AdventureIslandPools, Constants {
     mapping (uint256=>mapping(address=>UserInfo)) public users;
 
     address public mainRewardToken;

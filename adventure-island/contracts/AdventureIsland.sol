@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/Ownable.sol";
@@ -148,7 +150,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         return "provided by Seal-SC / www.sealsc.com";
     }
 
-    function() external payable {
+    receive() external payable {
         if(!ethPayer[msg.sender]) {
             revert("not from valid payer");
         }

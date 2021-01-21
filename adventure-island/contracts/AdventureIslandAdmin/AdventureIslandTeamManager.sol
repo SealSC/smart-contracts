@@ -1,18 +1,16 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
 
-import "../../../contract-libs/open-zeppelin/Ownable.sol";
+pragma solidity ^0.6.0;
+
+//import "../../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../../contract-libs/seal-sc/Calculation.sol";
 import "./AdventureIslandRoleManager.sol";
+import "../AdventureIslandData/AdventureIslandData.sol";
 
-contract AdventureIslandTeamManager is AdventureIslandRoleManager {
+abstract contract AdventureIslandTeamManager is AdventureIslandRoleManager, AdventureIslandData {
     using SafeMath for uint256;
     using Calculation for uint256;
-
-    address public team;
-    uint256 public teamRewardBP  = 100; // 100 Basis Point == 1%
-
-    bool public teamRewardPermanentlyDisabled = false;
 
     modifier onlyTeam() {
         require(msg.sender == team, "caller is not the team");
@@ -29,5 +27,12 @@ contract AdventureIslandTeamManager is AdventureIslandRoleManager {
 
     function updateTeamRewardBasis(uint256 _newBP) external onlyAdmin {
         teamRewardBP = _newBP;
+    }
+
+    function _mintTeamReward(uint256 _amount) internal {
+        if(team == ZERO_ADDRESS || teamRewardPermanentlyDisabled) {
+            return;
+        }
+        rewardSupplier.mint(mainRewardToken, team, _amount.percentageMul(teamRewardBP, BASIS_POINT_PRECISION));
     }
 }

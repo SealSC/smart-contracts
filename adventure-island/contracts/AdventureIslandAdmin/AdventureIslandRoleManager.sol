@@ -1,10 +1,12 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../../contract-libs/seal-sc/Constants.sol";
 
-contract AdventureIslandRoleManager is Ownable, Constants {
+abstract contract AdventureIslandRoleManager is Ownable, Constants {
     using SafeMath for uint256;
 
     event AddAdmin(address indexed newAdmin, uint256 indexed blockNumber);

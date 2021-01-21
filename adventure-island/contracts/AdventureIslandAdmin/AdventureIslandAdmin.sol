@@ -1,11 +1,13 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../AdventureIslandInternal/AdventureIslandInternal.sol";
 import "./AdventureIslandPoolManager.sol";
 
-contract AdventureIslandAdmin is AdventureIslandPoolManager {
+abstract contract AdventureIslandAdmin is AdventureIslandPoolManager {
     using Address for address payable;
     using SafeERC20 for IERC20;
 

@@ -1,8 +1,11 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../AdventureIslandData/AdventureIslandData.sol";
 import "./AdventureIslandStakingOperations.sol";
+//import "../AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
 contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperations {
     using SafeMath for uint256;
@@ -241,12 +244,5 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
         } else {
             pool.stakingToken.safeTransfer(msg.sender, _amount);
         }
-    }
-
-    function _mintTeamReward(uint256 _amount) internal {
-        if(team == ZERO_ADDRESS || teamRewardPermanentlyDisabled) {
-            return;
-        }
-        rewardSupplier.mint(mainRewardToken, team, _amount.percentageMul(teamRewardBP, BASIS_POINT_PRECISION));
     }
 }

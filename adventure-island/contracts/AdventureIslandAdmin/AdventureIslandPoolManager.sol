@@ -1,11 +1,13 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../AdventureIslandInternal/AdventureIslandInternal.sol";
 import "./AdventureIslandTeamManager.sol";
 
-contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIslandInternal {
+abstract contract AdventureIslandPoolManager is AdventureIslandTeamManager, AdventureIslandInternal {
     using SafeMath for uint256;
 
     function addPool(
