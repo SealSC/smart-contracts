@@ -1,4 +1,6 @@
-pragma solidity ^0.5.9;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
@@ -10,7 +12,7 @@ import "./UniswapConnectorViews.sol";
 import "../../contract-libs/seal-sc/Calculation.sol";
 import "./interface/IUniswapConnector.sol";
 
-contract UniswapConnector is IUniswapConnector, UniswapConnectorAdmin, UniswapConnectorViews {
+contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
     using SafeMath for uint256;
     using Address for address payable;
     using SafeERC20 for IERC20;
@@ -123,5 +125,5 @@ contract UniswapConnector is IUniswapConnector, UniswapConnectorAdmin, UniswapCo
         return (supportedPair[_lp][0], supportedPair[_lp][1]);
     }
 
-    function () external payable {}
+    receive () external payable {}
 }
