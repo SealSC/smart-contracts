@@ -4,8 +4,8 @@ import "../open-zeppelin/Ownable.sol";
 
 
 contract Simple3Role is Ownable {
-    mapping(address=>bool) administrator;
-    mapping(address=>bool) executor;
+    mapping(address=>bool) internal administrator;
+    mapping(address=>bool) internal executor;
 
     constructor(address _owner) public Ownable(_owner) {
         administrator[_owner] = true;
