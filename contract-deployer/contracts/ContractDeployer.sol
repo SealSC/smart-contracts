@@ -3,13 +3,16 @@ pragma solidity ^0.6.0;
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "../../contract-libs/open-zeppelin/Create2.sol";
 import "../../contract-libs/seal-sc/Simple3Role.sol";
-import "../../contract-libs/bytes-utils/BytesLib.sol";
-import "../../contract-libs/bytes-utils/BytesLib.sol";
+import "../../contract-libs/seal-sc/Calculation.sol";
+import "../../contract-libs/open-zeppelin/ECDSA.sol";
+import "../../contract-libs/open-zeppelin/Address.sol";
+import "../../contract-libs/open-zeppelin/SafeMath.sol";
 
 
 contract ContractDeployer is Simple3Role, RejectDirectETH {
-
-    using BytesLib for bytes;
+    using ECDSA for bytes32;
+    using Address for address;
+    using SafeMath for uint256;
 
     struct PresetContract {
         string name;
@@ -19,6 +22,9 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
     }
 
     PresetContract[] public presets;
+
+    address public deployApproval;
+    mapping(bytes32=>address) public presetDeployed;
 
     constructor(address _owner) public Simple3Role(_owner) {}
 
@@ -30,21 +36,30 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
         emit ContractDeployed(msg.sender, newContract, msg.value);
     }
 
-    function deployPresetContract(uint256 _idx, bytes32 _salt, bytes calldata _bytecode, bytes calldata _params) external payable {
+    function deployPresetContract(uint256 _idx, bytes calldata _codeSig, bytes32 _deployHash, bytes calldata _deploySig, bytes32 _salt, bytes calldata _bytecode) external payable {
         require(presets.length > _idx, "invalid preset contract index");
-
         PresetContract memory presetInfo = presets[_idx];
-        require(!presetInfo.disabled, "preset contract was disabled");
 
-        bytes32 codeHash = keccak256(_bytecode);
-        require(codeHash == presetInfo.codeHash, "invalid code hash");
+        bytes32 tempHash = keccak256(abi.encode(_idx, msg.sender));
+        require(deployApproval == tempHash.recover(_codeSig), "invalid code signature");
 
-        bytes memory deployCode = _bytecode.concat(_params);
-        address newContract = Create2.deploy(msg.value, _salt, deployCode);
+        tempHash = keccak256(abi.encode(_idx, _salt, _deployHash, msg.sender));
+        require(deployApproval == tempHash.recover(_deploySig), "invalid deploy signature");
+
+        uint256 toContractVal = msg.value.sub(presetInfo.fee);
+
+        address newContract = Create2.deploy(toContractVal, _salt, _bytecode);
         emit PresetContractDeployed(msg.sender, newContract, _idx, msg.value, presetInfo.fee);
+
+        assembly {
+            tempHash := extcodehash(newContract)
+        }
+
+        require(tempHash == presetInfo.codeHash, "invalid preset code");
+        presetDeployed[tempHash] = newContract;
     }
 
-    function addPresetContract(uint256 _fee, string calldata _name, bytes32 _codeHash, bool _disabled) external onlyAdmin {
+    function addPresetContract(uint256 _fee, bytes32 _codeHash, string calldata _name, bool _disabled) external onlyAdmin {
         presets.push(PresetContract({
             name: _name,
             codeHash: _codeHash,
