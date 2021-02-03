@@ -1,10 +1,10 @@
 pragma solidity ^0.6.0;
-pragma experimental ABIEncoderV2;
 
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "./interface/ITokenSupplyFormula.sol";
+import "../../contract-deployer/build/ContractDeployer.sol";
 
-contract LinearSupply is ITokenSupplyFormula {
+contract LinearSupply is ITokenSupplyFormula, Ownable {
     using SafeMath for uint256;
 
     struct FormulaParam {
@@ -13,14 +13,19 @@ contract LinearSupply is ITokenSupplyFormula {
     }
 
     FormulaParam public formulaParam;
-    constructor(uint256 _a, uint256 _b) public {
+    constructor(uint256 _a, uint256 _b, address _owner) public Ownable(_owner) {
         formulaParam.a = _a;
         formulaParam.b = _b;
     }
 
-    function CalcSupply(CalcInputParameters calldata _param) external override returns (bool, uint256) {
-        uint256 blocks = _param.to.sub(_param.from);
+    function updateFormulaParam(uint256 _a, uint256 _b) external onlyOwner {
+        formulaParam.a = _a;
+        formulaParam.b = _b;
+    }
 
-        return (true, formulaParam.a.mul(blocks).mul(_param.base).add(formulaParam.b));
+    function CalcSupply(uint256 _fromBlock, uint256 _toBlock, uint256 _base) external override returns (bool, uint256) {
+        uint256 blocks = _toBlock.sub(_fromBlock);
+
+        return (true, formulaParam.a.mul(blocks).mul(_base).add(formulaParam.b));
     }
 }
