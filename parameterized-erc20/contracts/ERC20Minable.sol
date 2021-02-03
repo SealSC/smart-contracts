@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
-
 pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/ERC20.sol";
 import "../../contract-libs/seal-sc/Constants.sol";
 import "../../contract-libs/seal-sc/Calculation.sol";
 import "../../contract-libs/seal-sc/Simple3Role.sol";
+import "../../token-supply-formulas/contracts/interface/ITokenSupplyFormula.sol";
 
 abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     using SafeMath for uint256;
     using Calculation for uint256;
 
     bool public minable;
-    bool mintEnabled = true;
+    bool public mintEnabled = true;
+    ITokenSupplyFormula public supplyFormula;
 
     struct MinterInfo {
         address minter;
         uint256 weight;
     }
-
 
     event AddMinter(address minter, uint256 weight, uint256 block);
     event UpdateMinterWeight(address minter, uint256 weight, uint256 block);
@@ -74,13 +74,19 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         delete minters[_minter];
     }
 
-    function mint(address to, uint256 amount) external onlyMinter {
+    function mintWithFormula(address _to, uint256 _fromBlock, uint256 _toBlock, uint256 _base) external onlyMinter {
+        (bool valid, uint256 amount) = supplyFormula.CalcSupply(_fromBlock, _toBlock, _base);
+        require(valid, "invalid param");
+
+        mint(_to, amount);
+    }
+
+    function mint(address to, uint256 amount) public onlyMinter {
         require(minable, "not minable");
         require(mintEnabled, "mint disabled");
         require(to != ZERO_ADDRESS, "can not mint to address 0");
 
         MinterInfo memory minter = minters[msg.sender];
-
         uint256 actualAmount = amount.percentageMul(minter.weight, BASIS_POINT_PRECISION);
         emit MintTo(msg.sender, to, actualAmount);
         _mint(to, actualAmount);
