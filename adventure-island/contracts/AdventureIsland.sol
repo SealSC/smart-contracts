@@ -39,6 +39,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
             require(noDecimalsReward == _rewardIntegerPart, "invalid decimals for reward setting");
         }
         admins[_admin] = _admin;
+        admins[_owner] = _owner;
     }
 
     function stakingByContract(uint256 _pid, uint256 _amount, address payable _forUser) external noReentrancy {
