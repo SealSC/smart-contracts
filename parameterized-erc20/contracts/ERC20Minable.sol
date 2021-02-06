@@ -78,7 +78,7 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     }
 
     function setSupplyFormula(address _formula) external onlyAdmin {
-        require(!_formula.isContract(), "formula must be a contract");
+        require(_formula.isContract(), "formula must be a contract");
 
         emit FormulaChanged(address(supplyFormula), _formula, msg.sender);
         supplyFormula = ITokenSupplyFormula(_formula);

@@ -8,9 +8,11 @@ import "../AdventureIslandInternal/AdventureIslandInternal.sol";
 import "./AdventureIslandPoolManager.sol";
 
 abstract contract AdventureIslandAdmin is AdventureIslandPoolManager {
-    using Address for address payable;
+//    using Address for address payable;
+    using Address for address;
     using SafeERC20 for IERC20;
 
+    event RewardSupplierChanged(address indexed from, address indexed to, address byAdmin);
     function setGlobalStartBlock(uint256 _newStart) external onlyAdmin {
         require(globalStartBlock > _newStart, "new start must less than current start");
         require(_newStart > block.number, "new start must after current block");
@@ -25,6 +27,12 @@ abstract contract AdventureIslandAdmin is AdventureIslandPoolManager {
     function changeRewardPerBlock(uint256 _newReward)  external onlyAdmin {
         _updatePools();
         rewardPerBlock = _newReward;
+    }
+
+    function changeTokenSupplier(address _newSupplier) external onlyAdmin {
+        require(_newSupplier.isContract(), "supplier must be a contract");
+        emit RewardSupplierChanged(address(rewardSupplier), _newSupplier, msg.sender);
+        rewardSupplier = IERC20TokenSupplier(_newSupplier);
     }
 
     function changeUniConnector(address _newUniConnector) external onlyAdmin {
