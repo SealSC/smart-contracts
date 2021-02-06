@@ -6,10 +6,12 @@ import "../../contract-libs/seal-sc/Constants.sol";
 import "../../contract-libs/seal-sc/Calculation.sol";
 import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../token-supply-formulas/contracts/interface/ITokenSupplyFormula.sol";
+import "../../contract-libs/open-zeppelin/Address.sol";
 
 abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     using SafeMath for uint256;
     using Calculation for uint256;
+    using Address for address;
 
     bool public minable;
     bool public mintEnabled = true;
@@ -24,6 +26,7 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     event UpdateMinterWeight(address minter, uint256 weight, uint256 block);
     event MinterRemoved(address minter, uint256 weight, uint256 block);
     event MintTo(address minter, address to, uint256 amount);
+    event FormulaChanged(address indexed from, address indexed to, address indexed byAdmin);
 
     mapping(address=>MinterInfo) public minters;
 
@@ -74,7 +77,15 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         delete minters[_minter];
     }
 
+    function setSupplyFormula(address _formula) external onlyAdmin {
+        require(!_formula.isContract(), "formula must be a contract");
+
+        emit FormulaChanged(address(supplyFormula), _formula, msg.sender);
+        supplyFormula = ITokenSupplyFormula(_formula);
+    }
+
     function mintWithFormula(address _to, uint256 _fromBlock, uint256 _toBlock, uint256 _base) external onlyMinter {
+        require(address(supplyFormula) != ZERO_ADDRESS, "formula not set");
         (bool valid, uint256 amount) = supplyFormula.CalcSupply(_fromBlock, _toBlock, _base);
         require(valid, "invalid param");
 
