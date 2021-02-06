@@ -62,6 +62,15 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         factory = msg.sender;
     }
 
+    bool internal nameAndSymbolWasSet = false;
+    function setNameAndSymbol(string calldata _name, string calldata _symbol) external {
+        require(!nameAndSymbolWasSet, "Name and symbol was already set");
+        require(factory == msg.sender, "only factory");
+
+        name = _name;
+        symbol = _symbol;
+    }
+
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
