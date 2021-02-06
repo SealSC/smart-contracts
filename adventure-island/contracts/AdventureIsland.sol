@@ -75,6 +75,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         require(valid, info);
 
         if(_flashUnstaking) {
+            require(address(uniConnector) != ZERO_ADDRESS, "uni-connector not set");
             _tryFlashUnstaking(pool, user, _forOneToken, _outToken, _withdrawAmount);
         } else {
             _tryWithdraw(pool, user, _withdrawAmount);
@@ -99,6 +100,8 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
     }
 
     function flashStakingLP(uint256 _pid, uint256 _amount, address _inToken, address _outToken) external payable noReentrancy {
+        require(address(uniConnector) != ZERO_ADDRESS, "uni-connector not set");
+
         PoolInfo memory pool = allPools[_pid];
         uint256 fee = _amount.percentageMul(platformFeeBP, BASIS_POINT_PRECISION);
         uint256 inAmount = _amount.sub(fee);
