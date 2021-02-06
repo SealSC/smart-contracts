@@ -15,6 +15,14 @@ contract AdventureIslandStakingOperations is AdventureIslandData {
     using SafeERC20 for IERC20;
     using Calculation for uint256;
 
+    function _mintReward(address _token, address _to, uint256 _amount) internal {
+        if(address (rewardSupplier) == ZERO_ADDRESS) {
+            IERC20(_token).safeTransfer(_to, _amount);
+        } else {
+            rewardSupplier.mint(mainRewardToken, msg.sender, _amount);
+        }
+    }
+
     function _chargeFlashUnstakingFee(
         address _tokenA,
         uint256 _amountA,
@@ -165,7 +173,7 @@ contract AdventureIslandStakingOperations is AdventureIslandData {
             }
         }
 
-        rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
+        _mintReward(mainRewardToken, msg.sender, rewardAmount);
         return rewardAmount;
     }
 }

@@ -86,7 +86,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         uint256 stillNeed = user.stakeIn.mul(pool.rewardPerShare).div(COMMON_PRECISION).sub(user.rewardDebt);
         userReward = userReward.add(stillNeed);
 
-        rewardSupplier.mint(mainRewardToken, msg.sender, userReward);
+        _mintReward(mainRewardToken, msg.sender, userReward);
 
         user.willCollect = 0;
         user.stakeIn = user.stakeIn.sub(_withdrawAmount);
@@ -123,7 +123,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         }
 
         rewardAmount = _flashStakingReward(rewardBaseToken, inAmount, _getTokenPrice(rewardBaseToken));
-        rewardSupplier.mint(mainRewardToken, msg.sender, rewardAmount);
+        _mintReward(mainRewardToken, msg.sender, rewardAmount);
         UserInfo storage user = users[_pid][msg.sender];
         _staking(_pid, user, lpAmount, true);
     }
