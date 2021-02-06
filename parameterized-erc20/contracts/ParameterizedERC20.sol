@@ -13,10 +13,12 @@ contract ParameterizedERC20 is ERC20WithBlackList, ERC20Minable, SimpleSealSCSig
         string memory _name,
         string memory _symbol,
         uint8 _decimals,
-        bool _minable)
+        bool _minable,
+        uint256 _initSupply)
     public ERC20(_name, _symbol, _decimals) Simple3Role(_owner){
         require(_owner != ZERO_ADDRESS);
         minable = _minable;
+        _mint(_owner, _initSupply);
     }
 
     function _transfer(address sender, address recipient, uint256 amount) internal override(ERC20WithBlackList, ERC20) {
