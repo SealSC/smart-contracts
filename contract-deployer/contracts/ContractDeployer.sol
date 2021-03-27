@@ -23,7 +23,7 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
 
     PresetContract[] public presets;
 
-    address public deployApproval;
+    address public deployApprover;
     mapping(bytes32=>address) public presetDeployed;
 
     constructor(address _owner) public Simple3Role(_owner) {}
@@ -41,10 +41,10 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
         PresetContract memory presetInfo = presets[_idx];
 
         bytes32 tempHash = keccak256(abi.encode(_idx, msg.sender));
-        require(deployApproval == tempHash.recover(_codeSig), "invalid code signature");
+        require(deployApprover == tempHash.recover(_codeSig), "invalid code signature");
 
         tempHash = keccak256(abi.encode(_idx, _salt, _deployHash, msg.sender));
-        require(deployApproval == tempHash.recover(_deploySig), "invalid deploy signature");
+        require(deployApprover == tempHash.recover(_deploySig), "invalid deploy signature");
 
         uint256 toContractVal = msg.value.sub(presetInfo.fee);
 
@@ -57,6 +57,10 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
 
         require(tempHash == presetInfo.codeHash, "invalid preset code");
         presetDeployed[tempHash] = newContract;
+    }
+
+    function setDeployApprover(address _approver) external onlyAdmin {
+        deployApprover = _approver;
     }
 
     function addPresetContract(uint256 _fee, bytes32 _codeHash, string calldata _name, bool _disabled) external onlyAdmin {
