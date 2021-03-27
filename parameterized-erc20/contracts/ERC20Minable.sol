@@ -19,12 +19,12 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
 
     struct MinterInfo {
         address minter;
-        uint256 weight;
+        uint256 factor;
     }
 
-    event AddMinter(address minter, uint256 weight, uint256 block);
-    event UpdateMinterWeight(address minter, uint256 weight, uint256 block);
-    event MinterRemoved(address minter, uint256 weight, uint256 block);
+    event AddMinter(address minter, uint256 factor, uint256 block);
+    event UpdateMinterFactor(address minter, uint256 factor, uint256 block);
+    event MinterRemoved(address minter, uint256 factor, uint256 block);
     event MintTo(address minter, address to, uint256 amount);
     event FormulaChanged(address indexed from, address indexed to, address indexed byAdmin);
 
@@ -39,24 +39,24 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         mintEnabled = _enabled;
     }
 
-    function addMinter(address _minter, uint256 _weight) external onlyAdmin {
+    function addMinter(address _minter, uint256 _factor) external onlyAdmin {
         MinterInfo memory mi = minters[_minter];
         require(mi.minter ==  ZERO_ADDRESS, "minter already set");
 
-        uint256 minterWeight  = _weight;
-        if(minterWeight == 0) {
-            minterWeight = BASIS_POINT_PRECISION;
+        uint256 minterFactor  = _factor;
+        if(minterFactor == 0) {
+            minterFactor = BASIS_POINT_PRECISION;
         }
 
         mi.minter = _minter;
-        mi.weight = minterWeight;
+        mi.factor = minterFactor;
         minters[_minter] = mi;
 
-        emit AddMinter(_minter, _weight, block.number);
+        emit AddMinter(_minter, _factor, block.number);
     }
 
-    function updateMinterWeight(address[] calldata _minters, uint256[] calldata _weights) external onlyAdmin {
-        require(_minters.length == _weights.length, "parameter's length not match");
+    function updateMinterFactor(address[] calldata _minters, uint256[] calldata _factors) external onlyAdmin {
+        require(_minters.length == _factors.length, "parameter's length not match");
 
         for(uint256 i=0; i<_minters.length; i++) {
             MinterInfo storage mi = minters[_minters[i]];
@@ -64,15 +64,15 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
                 continue;
             }
 
-            mi.weight = _weights[i];
+            mi.factor = _factors[i];
 
-            emit UpdateMinterWeight(mi.minter, mi.weight, block.number);
+            emit UpdateMinterFactor(mi.minter, mi.factor, block.number);
         }
     }
 
     function removeMinter(address _minter) external onlyAdmin {
         MinterInfo memory mi = minters[_minter];
-        emit MinterRemoved(mi.minter, mi.weight, block.number);
+        emit MinterRemoved(mi.minter, mi.factor, block.number);
 
         delete minters[_minter];
     }
@@ -98,7 +98,7 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         require(to != ZERO_ADDRESS, "can not mint to address 0");
 
         MinterInfo memory minter = minters[msg.sender];
-        uint256 actualAmount = amount.percentageMul(minter.weight, BASIS_POINT_PRECISION);
+        uint256 actualAmount = amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
         emit MintTo(msg.sender, to, actualAmount);
         _mint(to, actualAmount);
     }

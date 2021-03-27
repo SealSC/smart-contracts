@@ -269,3 +269,4 @@ package-lock.json
 .idea
 mining-pools/build
 temp
+.standard-erc-20
