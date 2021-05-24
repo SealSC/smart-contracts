@@ -1,4 +1,2 @@
 [workspace]
-members = [
-    "contract-deployer"
-]
+members = ["contract-deployer", "parameterized-erc20"]
