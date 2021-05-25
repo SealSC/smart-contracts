@@ -1,2 +1,2 @@
 [workspace]
-members = ["contract-deployer", "parameterized-erc20"]
+members = ["contract-deployer", "staking-mining", "parameterized-erc20"]
