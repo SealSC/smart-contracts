@@ -33,6 +33,50 @@ mod staking_mining {
         user_stack_info: HashMap<(AccountId, u32), StakeInfo>,
     }
 
+    #[ink(event)]
+    pub struct PoolCreatedEvent {
+        #[ink(topic)]
+        staking_token: AccountId,
+        #[ink(topic)]
+        pid: u32,
+        reward_factor: u128,
+    }
+
+    #[ink(event)]
+    pub struct PoolClosedEvent {
+        #[ink(topic)]
+        pid: u32,
+        #[ink(topic)]
+        timestamp: u64,
+    }
+
+    #[ink(event)]
+    pub struct UserStakedEvent {
+        #[ink(topic)]
+        user: AccountId,
+        #[ink(topic)]
+        pid: u32,
+        amount: u128,
+    }
+
+    #[ink(event)]
+    pub struct UserColllectEvent {
+        #[ink(topic)]
+        user: AccountId,
+        #[ink(topic)]
+        pid: u32,
+        amount: u128,
+    }
+
+    #[ink(event)]
+    pub struct UserExitEvent {
+        #[ink(topic)]
+        user: AccountId,
+        #[ink(topic)]
+        pid: u32,
+        withdraw_amount: u128,
+    }
+
     impl StakingMining {
         #[ink(constructor)]
         pub fn new(owner: AccountId, reward_token: AccountId) -> Self {
@@ -63,6 +107,12 @@ mod staking_mining {
                 created: true,
             });
 
+            self.env().emit_event(PoolCreatedEvent {
+                staking_token,
+                pid: self.pool_list.len() - 1,
+                reward_factor,
+            });
+
             true
         }
 
@@ -74,6 +124,10 @@ mod staking_mining {
                     if pool.created && !pool.closed_flag {
                         pool.closed_flag = true;
                         pool.closed_time = block_timestamp;
+                        self.env().emit_event(PoolClosedEvent {
+                            pid,
+                            timestamp: block_timestamp,
+                        });
                         return true;
                     }
                 }
@@ -84,13 +138,14 @@ mod staking_mining {
         #[ink(message)]
         pub fn stake(&mut self, pid: u32, amount: u128) -> bool {
             if self.pool_list.get(pid).is_some() && self.pool_list[pid].created {
+                let user = self.env().caller();
                 //先把之前的收益提取出来给用户
-                if self.collect(pid, self.env().caller(), false) {
+                if self.collect(pid, user, false) {
                     //todo: 转移用户token到本合约，poolList[_pid].stakingToken.transferFrom(msg.sender, address(this), _amount);
-                    if let Some(mut user_staked) =
-                        self.user_stack_info.get_mut(&(self.env().caller(), pid))
-                    {
+                    if let Some(mut user_staked) = self.user_stack_info.get_mut(&(user, pid)) {
                         user_staked.staked_amount += amount;
+                        self.env().emit_event(UserStakedEvent { user, pid, amount });
+                        return true;
                     }
                 }
             }
@@ -111,18 +166,37 @@ mod staking_mining {
                             }
 
                             if current_time > user_stacked.last_collect_time {
-                                let _reward_amount = (user_stacked.staked_amount
+                                let reward_amount = (user_stacked.staked_amount
                                     * u128::from(current_time - user_stacked.last_collect_time)
                                     * pool.reward_factor)
                                     / REWARD_FACTOR_DECIMALS;
 
                                 //todo: 给用户发放奖励: rewardToken.transfer(_user, rewardAmount)
+                                let mut withdraw_amount = None;
+
                                 if exit_flag {
                                     //todo: poolList[_pid].stakingToken.transfer(user, userStaked.stakedAmount);
+
+                                    withdraw_amount = Some(user_stacked.staked_amount);
+
                                     user_stacked.staked_amount = 0;
                                 }
 
                                 user_stacked.last_collect_time = current_time;
+
+                                self.env().emit_event(UserColllectEvent {
+                                    user,
+                                    pid,
+                                    amount: reward_amount,
+                                });
+
+                                if let Some(v) = withdraw_amount {
+                                    self.env().emit_event(UserExitEvent {
+                                        user,
+                                        pid,
+                                        withdraw_amount: v,
+                                    });
+                                }
                             }
                         }
                     }
