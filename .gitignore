@@ -267,6 +267,4 @@ package-lock.json
 # End of https://www.toptal.com/developers/gitignore/api/macos,jetbrains,soliditytruffle,solidity
 
 .idea
-mining-pools/build
 temp
-.standard-erc-20
