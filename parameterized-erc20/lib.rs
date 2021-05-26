@@ -4,6 +4,7 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod parameterized_erc20 {
+    use ink_prelude::vec::Vec;
     use ink_storage::collections::HashMap;
 
     /// Defines the storage of your contract.
@@ -51,14 +52,7 @@ mod parameterized_erc20 {
     impl ParameterizedErc20 {
         /// Constructor that initializes the `bool` value to the given `init_value`.
         #[ink(constructor)]
-        pub fn new(
-            owner: AccountId,
-            _name: String,
-            _symbol: String,
-            _decimals: u8,
-            minable: bool,
-            _init_supply: Balance,
-        ) -> Self {
+        pub fn new(owner: AccountId, _decimals: u8, minable: bool, _init_supply: Balance) -> Self {
             Self {
                 owner,
                 minable,
@@ -75,14 +69,7 @@ mod parameterized_erc20 {
         /// Constructors can delegate to other constructors.
         #[ink(constructor)]
         pub fn default() -> Self {
-            Self::new(
-                Self::env().caller(),
-                String::new(),
-                String::new(),
-                0,
-                false,
-                0,
-            )
+            Self::new(Self::env().caller(), 0, false, 0)
         }
 
         #[ink(message)]
@@ -115,8 +102,8 @@ mod parameterized_erc20 {
             if self.env().caller() != self.owner {
                 return false;
             }
-            for minter in minters {
-                self.minters.entry(minter).and_modify(|f| f.0 = factor);
+            for minter in &minters {
+                self.minters.entry(*minter).and_modify(|f| f.0 = factor);
             }
             true
         }

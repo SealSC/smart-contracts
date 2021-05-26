@@ -10,6 +10,7 @@ ink_metadata = { version = "3.0.0-rc3", default-features = false, features = ["d
 ink_env = { version = "3.0.0-rc3", default-features = false }
 ink_storage = { version = "3.0.0-rc3", default-features = false }
 ink_lang = { version = "3.0.0-rc3", default-features = false }
+ink_prelude = { version = "3.0.0-rc3", default-features = false }
 
 scale = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive"] }
 scale-info = { version = "0.6.0", default-features = false, features = ["derive"], optional = true }
@@ -17,10 +18,7 @@ scale-info = { version = "0.6.0", default-features = false, features = ["derive"
 [lib]
 name = "parameterized_erc20"
 path = "lib.rs"
-crate-type = [
-    
-    "cdylib",
-] # Used for normal contract Wasm blobs.
+crate-type = ["cdylib"] # Used for normal contract Wasm blobs.
 
 [features]
 default = ["std"]
@@ -33,3 +31,9 @@ std = [
     "scale-info/std",
 ]
 ink-as-dependency = []
+
+[profile.release]
+overflow-checks = false
+
+[profile.dev]
+overflow-checks = false

@@ -1,7 +1,7 @@
 [package]
 name = "staking_mining"
 version = "0.1.0"
-authors = ["[your_name] <[your_email]>"]
+authors = ["Matrix <113445886@qq.com>"]
 edition = "2018"
 
 [dependencies]
@@ -17,10 +17,7 @@ scale-info = { version = "0.6.0", default-features = false, features = ["derive"
 [lib]
 name = "staking_mining"
 path = "lib.rs"
-crate-type = [
-	# Used for normal contract Wasm blobs.
-	"cdylib",
-]
+crate-type = ["cdylib"] # Used for normal contract Wasm blobs.
 
 [features]
 default = ["std"]
@@ -33,3 +30,9 @@ std = [
     "scale-info/std",
 ]
 ink-as-dependency = []
+
+[profile.release]
+overflow-checks = false
+
+[profile.dev]
+overflow-checks = false

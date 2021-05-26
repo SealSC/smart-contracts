@@ -4,6 +4,7 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod contract_deployer {
+    use ink_prelude::{string::String, vec::Vec};
     /// Defines the storage of your contract.
     /// Add new fields to the below struct in order
     /// to add new static storage fields to your contract.
