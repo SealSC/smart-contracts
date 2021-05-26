@@ -27,7 +27,9 @@ mod staking_mining {
     /// Stake Info
     /// staked_amount: amount of staked
     /// last_collect_time: last time of collect earnings
-    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug)]
+    #[derive(
+        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Eq, PartialEq, Default, Debug,
+    )]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     struct StakeInfo {
         staked_amount: u128,
@@ -205,49 +207,51 @@ mod staking_mining {
         fn collect(&mut self, pid: u32, user: AccountId, exit_flag: bool) -> bool {
             if self.env().caller() == user && self.pool_list.get(pid).is_some() {
                 let pool = &self.pool_list[pid];
+                let mut reward_amount = None;
+                let mut withdraw_amount = None;
+
                 if pool.created {
                     let mut current_time = self.env().block_timestamp();
-                    // 如果找不到，怎么处理
-                    if let Some(mut user_stacked) = self.user_staked_info.get_mut(&(user, pid)) {
-                        if pool.closed_flag {
-                            if current_time > pool.closed_time {
-                                current_time = pool.closed_time;
-                            }
-
-                            if current_time > user_stacked.last_collect_time {
-                                let reward_amount = (user_stacked.staked_amount
-                                    * u128::from(current_time - user_stacked.last_collect_time)
-                                    * pool.reward_factor)
-                                    / REWARD_FACTOR_DECIMALS;
-
-                                //todo: 给用户发放奖励: rewardToken.transfer(_user, rewardAmount)
-                                let mut withdraw_amount = None;
-
-                                if exit_flag {
-                                    //todo: poolList[_pid].stakingToken.transfer(user, userStaked.stakedAmount);
-
-                                    withdraw_amount = Some(user_stacked.staked_amount);
-
-                                    user_stacked.staked_amount = 0;
+                    self.user_staked_info
+                        .entry((user, pid))
+                        .and_modify(|user_staked| {
+                            if pool.closed_flag {
+                                if current_time > pool.closed_time {
+                                    current_time = pool.closed_time;
                                 }
 
-                                user_stacked.last_collect_time = current_time;
+                                if current_time > user_staked.last_collect_time {
+                                    reward_amount = Some(
+                                        (user_staked.staked_amount
+                                            * u128::from(
+                                                current_time - user_staked.last_collect_time,
+                                            )
+                                            * pool.reward_factor)
+                                            / REWARD_FACTOR_DECIMALS,
+                                    );
 
-                                self.env().emit_event(UserColllectEvent {
-                                    user,
-                                    pid,
-                                    amount: reward_amount,
-                                });
+                                    if exit_flag {
+                                        withdraw_amount = Some(user_staked.staked_amount);
+                                        user_staked.staked_amount = 0;
+                                    }
 
-                                if let Some(v) = withdraw_amount {
-                                    self.env().emit_event(UserExitEvent {
-                                        user,
-                                        pid,
-                                        withdraw_amount: v,
-                                    });
+                                    user_staked.last_collect_time = current_time;
                                 }
                             }
-                        }
+                        })
+                        .or_default();
+
+                    if let Some(amount) = reward_amount {
+                        self.env()
+                            .emit_event(UserColllectEvent { user, pid, amount });
+                    }
+
+                    if let Some(withdraw_amount) = withdraw_amount {
+                        self.env().emit_event(UserExitEvent {
+                            user,
+                            pid,
+                            withdraw_amount,
+                        });
                     }
                 }
             }
