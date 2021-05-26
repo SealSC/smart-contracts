@@ -44,7 +44,7 @@ mod staking_mining {
         owner: AccountId,
         reward_token: AccountId,
         pool_list: Vec<Pool>,
-        user_stack_info: HashMap<(AccountId, u32), StakeInfo>,
+        user_staked_info: HashMap<(AccountId, u32), StakeInfo>,
     }
 
     /// Event of Pool created
@@ -120,7 +120,7 @@ mod staking_mining {
                 owner,
                 reward_token,
                 pool_list: Vec::new(),
-                user_stack_info: HashMap::new(),
+                user_staked_info: HashMap::new(),
             }
         }
 
@@ -187,7 +187,7 @@ mod staking_mining {
                 //先把之前的收益提取出来给用户
                 if self.collect(pid, user, false) {
                     //todo: 转移用户token到本合约，poolList[_pid].stakingToken.transferFrom(msg.sender, address(this), _amount);
-                    if let Some(mut user_staked) = self.user_stack_info.get_mut(&(user, pid)) {
+                    if let Some(mut user_staked) = self.user_staked_info.get_mut(&(user, pid)) {
                         user_staked.staked_amount += amount;
                         self.env().emit_event(UserStakedEvent { user, pid, amount });
                         return true;
@@ -208,7 +208,7 @@ mod staking_mining {
                 if pool.created {
                     let mut current_time = self.env().block_timestamp();
                     // 如果找不到，怎么处理
-                    if let Some(mut user_stacked) = self.user_stack_info.get_mut(&(user, pid)) {
+                    if let Some(mut user_stacked) = self.user_staked_info.get_mut(&(user, pid)) {
                         if pool.closed_flag {
                             if current_time > pool.closed_time {
                                 current_time = pool.closed_time;
