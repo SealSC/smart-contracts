@@ -13,7 +13,11 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return _poolsEnabled();
     }
 
-    function getToBeCollectListOf(address user) public view returns(uint256[] memory, uint256[] memory, uint256[] memory, uint256[] memory) {
+    function getToBeCollectListOf(address user) public view
+        returns(uint256[] memory userReward,
+                uint256[] memory poolReward,
+                uint256[] memory userStaked,
+                uint256[] memory poolStaked) {
         uint256[] memory userReward = new uint256[](allPoolsCount);
         uint256[] memory poolReward = new uint256[](allPoolsCount);
         uint256[] memory userStaked = new uint256[](allPoolsCount);
