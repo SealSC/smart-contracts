@@ -4,7 +4,7 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod parameterized_erc20 {
-    use ink_prelude::vec::Vec;
+    use ink_prelude::{string::String, vec::Vec};
     use ink_storage::collections::HashMap;
 
     /// Defines the storage of your contract.
@@ -13,7 +13,10 @@ mod parameterized_erc20 {
     #[ink(storage)]
     pub struct ParameterizedErc20 {
         owner: AccountId,
+        name: String,
+        symbol: String,
         minable: bool,
+        decimals: u8,
         total_supply: Balance,
         mint_enable_status: bool,
         balance_of: HashMap<AccountId, Balance>,
@@ -52,9 +55,19 @@ mod parameterized_erc20 {
     impl ParameterizedErc20 {
         /// Constructor that initializes the `bool` value to the given `init_value`.
         #[ink(constructor)]
-        pub fn new(owner: AccountId, _decimals: u8, minable: bool, _init_supply: Balance) -> Self {
+        pub fn new(
+            owner: AccountId,
+            name: String,
+            symbol: String,
+            decimals: u8,
+            minable: bool,
+            _init_supply: Balance,
+        ) -> Self {
             Self {
                 owner,
+                name,
+                symbol,
+                decimals,
                 minable,
                 total_supply: 0,
                 mint_enable_status: false,
@@ -69,7 +82,14 @@ mod parameterized_erc20 {
         /// Constructors can delegate to other constructors.
         #[ink(constructor)]
         pub fn default() -> Self {
-            Self::new(Self::env().caller(), 0, false, 0)
+            Self::new(
+                Self::env().caller(),
+                String::new(),
+                String::new(),
+                0,
+                false,
+                0,
+            )
         }
 
         #[ink(message)]
