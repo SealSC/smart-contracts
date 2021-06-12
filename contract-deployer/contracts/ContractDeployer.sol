@@ -48,6 +48,8 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
         require(presets.length > _idx, "invalid preset contract index");
         PresetContract memory presetInfo = presets[_idx];
 
+        require(!presetInfo.disabled, "preset contract  was disabled for now");
+
         bytes32 tempHash = keccak256(abi.encodePacked(_idx, msg.sender));
         string memory hashStr = SealUtils.toLowerCaseHex(abi.encodePacked(tempHash));
 
