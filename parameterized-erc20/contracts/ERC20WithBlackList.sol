@@ -15,7 +15,8 @@ abstract contract ERC20WithBlackList is ERC20, Simple3Role {
     }
 
     function _transfer(address sender, address recipient, uint256 amount) internal override virtual {
-        require(!blackList[sender], "blocked address");
+        require(!blackList[sender], "blocked sender address");
+        require(!blackList[recipient], "blocked recipient address");
         super._transfer(sender, recipient, amount);
     }
 }
