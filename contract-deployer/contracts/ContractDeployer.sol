@@ -89,12 +89,8 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
         }));
     }
 
-    function disablePresetContract(uint256 _idx) external onlyAdmin {
-        presets[_idx].disabled = true;
-    }
-
-    function enablePresetContract(uint256 _idx) external onlyAdmin {
-        presets[_idx].disabled = false;
+    function setPresetContractDisableFlag(uint256 _idx, bool _disableFlag) external onlyAdmin {
+        presets[_idx].disabled = _disableFlag;
     }
 
     function updatePresetContractName(uint256 _idx, string calldata _name) external onlyAdmin {
