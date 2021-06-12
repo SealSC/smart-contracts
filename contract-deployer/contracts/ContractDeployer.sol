@@ -31,9 +31,11 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
     event PresetContractDeployed(address indexed user, address addr, uint256 contractIdx, uint256 value, uint256 fee);
     event ContractDeployed(address indexed user, address indexed addr, uint256 value);
 
-    function deployContract(bytes32 _salt, bytes calldata _bytecode) external payable {
+    function deployContract(bytes32 _salt, bytes calldata _bytecode) external payable returns(address theContract){
         address newContract = Create2.deploy(msg.value, _salt, _bytecode);
         emit ContractDeployed(msg.sender, newContract, msg.value);
+
+        return newContract;
     }
 
     function deployPresetContract(uint256 _idx, bytes calldata _codeSig, bytes32 _deployHash, bytes calldata _deploySig, bytes32 _salt, bytes calldata _bytecode) external payable {
