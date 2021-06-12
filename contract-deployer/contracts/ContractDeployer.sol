@@ -108,8 +108,4 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
     function presetContractCount() external view returns (uint256 presetCount) {
         return presets.length;
     }
-
-    function getBytecodeHash(bytes calldata _bytecode) external pure returns(bytes32 hash) {
-        return keccak256(_bytecode);
-    }
 }
