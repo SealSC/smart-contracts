@@ -1,10 +1,10 @@
-pragma solidity =0.5.16;
+pragma solidity =0.6.0;
 
-import './interfaces/IUniswapV2Factory.sol';
+import './interfaces/IUniswapV2Pair.sol';
 import './UniswapV2Pair.sol';
 import "./parameterized/listedPair.sol";
 
-contract UniswapV2Factory is IUniswapV2Factory, ApprovedTokenList {
+contract UniswapV2Factory is ApprovedTokenList {
     address public feeTo;
     address public feeToSetter;
 
