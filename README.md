@@ -1,4 +1,4 @@
-# solidity contract for low-code platform
+# smart contracts for low-code platform
 
 This branch will only serve the low-code platform, and removed the code that has nothing to do with the low-code platform.
 
