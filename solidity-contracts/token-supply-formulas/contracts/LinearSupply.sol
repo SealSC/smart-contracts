@@ -2,7 +2,7 @@ pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "./interface/ITokenSupplyFormula.sol";
-import "../../contract-deployer/build/ContractDeployer.sol";
+import "../../contract-libs/open-zeppelin/Ownable.sol";
 
 contract LinearSupply is ITokenSupplyFormula, Ownable {
     using SafeMath for uint256;
