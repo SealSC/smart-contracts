@@ -47,7 +47,7 @@ npm -g install @remix-project/remix-tests
 
 2. cd to the contract folder you want to test.
 
-3. run ```remix-tests test/```
+3. run ```remix-tests -c 0.6.0 test/```
 
 
 example:
@@ -62,7 +62,7 @@ git pull
 
 cd contract-deployer
 
-remix-tests test/
+remix-tests -c 0.6.0 test/
 ```  
 
 
