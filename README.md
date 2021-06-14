@@ -1,16 +1,27 @@
-# smart-contracts
+# solidity contract for low-code platform
 
-The repository is a smart contract collection warehouse with a business standardization agreement as the construction direction. 
-This warehouse will serve as a smart contract support warehouse for SEOR's low-code platform and SealSC's middleware platform.
-  
-  
-The code in the repository is currently in the development stage and has not been audited. 
-Please use the contract in the repository with caution, and evaluate and bear the risks and losses caused by the contract by yourself.
-  
-  
----  
-  
-  
-# License
+This branch will only serve the low-code platform, and removed the code that has nothing to do with the low-code platform.
 
-[Apache License 2.0](https://github.com/SealSC/smart-contracts/blob/master/LICENSE)
+## contracts list
+
+solidty 
+
+>**document**  
+>[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts)
+
+>**code**  
+>[contract deployer](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts/contract-deployer)  
+>[parameterized ERC20](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts/parameterized-erc20)  
+>[staking mining](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts/staking-mining)  
+>[uniswap connector](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts/uniswap-connector)  
+
+
+!ink  
+
+>**document**  
+>[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts)
+
+>**code**  
+>[contract deployer](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts/contract-deployer)  
+>[parameterized ERC20](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts/parameterized-erc20)  
+>[staking mining](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts/staking-mining)  
