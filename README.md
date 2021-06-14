@@ -7,7 +7,8 @@ This branch will only serve the low-code platform, and removed the code that has
 solidty 
 
 >**document**  
->[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts)
+>[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts)  
+>```document of each contract was written in the README.md file of their own folders.```
 
 >**code**  
 >[contract deployer](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/solidity-contracts/contract-deployer)  
@@ -19,7 +20,8 @@ solidty
 !ink  
 
 >**document**  
->[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts)
+>[overview](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts)  
+>```document of each contract was written in the comment of the code.```
 
 >**code**  
 >[contract deployer](https://github.com/SealSC/smart-contracts/tree/low-code-platform-dev/ink-contracts/contract-deployer)  
