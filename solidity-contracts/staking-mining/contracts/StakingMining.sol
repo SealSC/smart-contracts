@@ -34,7 +34,7 @@ contract StakingMining is stakingEvent, Ownable {
 
     IERC20 public rewardToken;
 
-    uint256 public REWARD_BASE_POINT = 10000;
+    uint256 public REWARD_BASE_POINT = 1e18;
     pool[] public poolList;
     mapping(address=>mapping(uint256=>stakeInfo)) public userStakeInfo;
 
