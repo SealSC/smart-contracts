@@ -158,10 +158,14 @@ mod contract_deployer {
             assert_eq!(contract_deployer.preset_count(), 0);
         }
 
-        /// We test a simple use case of our contract.
+        fn new_works() {
+            let contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+        }
+
         #[ink::test]
-        fn it_works() {
-            let mut contract_deployer = ContractDeployer::default();
+        fn add_preset_contrct() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
             assert_eq!(contract_deployer.preset_count(), 0);
             contract_deployer.add_preset_contract(
                 String::from("contract1"),
@@ -170,11 +174,154 @@ mod contract_deployer {
                 Vec::from([0x0; 32]),
             );
             assert_eq!(contract_deployer.preset_count(), 1);
-            assert!(contract_deployer.disable_preset_contract(0));
-            assert!(contract_deployer.enable_preset_contract(0));
-            assert!(contract_deployer.update_preset_contract_name(0, String::from("contract1-new")));
-            assert!(contract_deployer.update_preset_contract_fee(0, 2));
-            assert!(contract_deployer.set_deploy_approver(AccountId::from([0x02; 32])));
+        }
+
+        #[ink::test]
+        fn enable_preset_contract_success_when_exist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+            assert_eq!(contract_deployer.preset_count(), 1);
+            assert_eq!(contract_deployer.enable_preset_contract(0), true);
+            assert_eq!(contract_deployer.preset_contracts[0].2, false);
+        }
+
+        #[ink::test]
+        fn enable_preset_contract_failed_when_nonexist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+            assert_eq!(contract_deployer.preset_count(), 1);
+            assert_eq!(contract_deployer.enable_preset_contract(1), false);
+        }
+
+        #[ink::test]
+        fn disable_preset_contract_success_when_exist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+            assert_eq!(contract_deployer.preset_count(), 1);
+            assert_eq!(contract_deployer.enable_preset_contract(0), true);
+            assert_eq!(contract_deployer.preset_contracts[0].2, false);
+            assert_eq!(contract_deployer.disable_preset_contract(0), true);
+            assert_eq!(contract_deployer.preset_contracts[0].2, true);
+        }
+
+        #[ink::test]
+        fn disable_preset_contract_failed_when_nonexist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+            assert_eq!(contract_deployer.preset_count(), 1);
+            assert_eq!(contract_deployer.enable_preset_contract(0), true);
+            assert_eq!(contract_deployer.preset_contracts[0].2, false);
+            assert_eq!(contract_deployer.disable_preset_contract(1), false);
+            assert_eq!(contract_deployer.preset_contracts[0].2, false);
+        }
+
+        #[ink::test]
+        fn update_contract_name_success_when_exist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+
+            assert_eq!(
+                contract_deployer.update_preset_contract_name(0, String::from("contract1-new")),
+                true
+            );
+
+            assert_eq!(contract_deployer.preset_contracts[0].0, "contract1-new");
+        }
+
+        #[ink::test]
+        fn update_contract_name_failed_when_nonexist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+
+            assert_eq!(
+                contract_deployer.update_preset_contract_name(1, String::from("contract1-new")),
+                false
+            );
+        }
+
+        #[ink::test]
+        fn update_contract_fee_success_when_exist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+
+            assert_eq!(contract_deployer.update_preset_contract_fee(0, 99), true);
+            assert_eq!(contract_deployer.preset_contracts[0].1, 99)
+        }
+
+        #[ink::test]
+        fn update_contract_fee_failed_when_nonexist() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            contract_deployer.add_preset_contract(
+                String::from("contract1"),
+                1,
+                true,
+                Vec::from([0x0; 32]),
+            );
+
+            assert_eq!(contract_deployer.update_preset_contract_fee(1, 99), false);
+        }
+
+        #[ink::test]
+        fn set_deploy_approver_success() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            assert_eq!(
+                contract_deployer.set_deploy_approver(AccountId::from([0x00; 32])),
+                true
+            );
+        }
+
+        #[ink::test]
+        fn deploy_preset_contract_failed() {
+            let mut contract_deployer = ContractDeployer::new(AccountId::from([0x01; 32]));
+            assert_eq!(contract_deployer.preset_count(), 0);
+            assert_eq!(
+                contract_deployer.deploy_preset_contract(1, vec![], vec![], vec![], vec![], vec![]),
+                false
+            );
         }
     }
 }
