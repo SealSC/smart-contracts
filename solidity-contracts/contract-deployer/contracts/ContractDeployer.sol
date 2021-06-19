@@ -101,10 +101,6 @@ contract ContractDeployer is Simple3Role, RejectDirectETH {
         presets[_idx].fee = _fee;
     }
 
-    function computeAddress(bytes32 _salt, bytes32 _bytecodeHash) internal view returns (address addr) {
-        return Create2.computeAddress(_salt, _bytecodeHash);
-    }
-
     function presetContractCount() external view returns (uint256 presetCount) {
         return presets.length;
     }
