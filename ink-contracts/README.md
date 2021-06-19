@@ -25,8 +25,17 @@ Then you have to install ink! command line utility which will make setting up Su
 
 
 # Testing
+```
+cargo install cargo-tarpaulin
+cargo tarpaulin
 
-```cargo test```
+|| Tested/Total Lines:
+|| contract-deployer/lib.rs: 131/143 +0%
+|| parameterized-erc20/lib.rs: 113/128 +0%
+|| staking-mining/lib.rs: 83/115 +0%
+|| 
+84.72% coverage, 327/386 lines covered, +0% change in coverage
+```
 
 
 

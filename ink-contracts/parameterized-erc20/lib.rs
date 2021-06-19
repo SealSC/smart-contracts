@@ -93,6 +93,14 @@ mod parameterized_erc20 {
         }
 
         #[ink(message)]
+        pub fn get_mint_enable_status(&self) -> bool {
+            if self.env().caller() != self.owner {
+                return false;
+            }
+            self.mint_enable_status
+        }
+
+        #[ink(message)]
         pub fn set_mint_enable_status(&mut self, enabled: bool) -> bool {
             if self.env().caller() != self.owner {
                 return false;
@@ -129,12 +137,22 @@ mod parameterized_erc20 {
         }
 
         #[ink(message)]
+        pub fn get_minter_factor(&mut self, minter: AccountId) -> Balance {
+            if self.env().caller() != self.owner {
+                return 0;
+            }
+
+            self.minters.get(&minter).map(|res| res.0).unwrap_or(0)
+        }
+
+        #[ink(message)]
         pub fn remove_minter(&mut self, minter: AccountId) -> bool {
             if self.env().caller() != self.owner {
                 return false;
             }
 
             if self.minters.contains_key(&minter) && !self.minters[&minter].1 {
+                self.minters[&minter].0 = 0;
                 self.minters[&minter].1 = true;
                 self.env().emit_event(RemoveMinterEvent {
                     minter,
@@ -199,6 +217,107 @@ mod parameterized_erc20 {
                 }
             }
             false
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use ink_lang as ink;
+
+        #[ink::test]
+        fn default_works() {
+            let erc20 = ParameterizedErc20::default();
+            assert_eq!(erc20.get_mint_enable_status(), false);
+        }
+
+        #[ink::test]
+        fn it_works() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                1000,
+            );
+
+            assert_eq!(erc20.get_mint_enable_status(), false);
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.get_mint_enable_status(), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x02; 32]), 100), true);
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 100);
+            assert_eq!(
+                erc20.update_minter_factor(vec![AccountId::from([0x02; 32])], 50),
+                true
+            );
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 50);
+            assert_eq!(erc20.remove_minter(AccountId::from([0x02; 32])), true);
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 0);
+            assert_eq!(erc20.add_to_blacklist(AccountId::from([0x02; 32])), true);
+            assert_eq!(
+                erc20.remove_from_blacklist(AccountId::from([0x02; 32])),
+                true
+            );
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_not_minable() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                false,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_mint_disabled() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(false), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_mint_status_enabeled_but_minter_not_add() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_true_when_everything_is_ok() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), true);
         }
     }
 }

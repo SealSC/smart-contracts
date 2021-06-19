@@ -157,6 +157,14 @@ mod staking_mining {
             true
         }
 
+        #[ink(message)]
+        pub fn pool_count(&self) -> u32 {
+            self.pool_list
+                .iter()
+                .filter(|pool| !pool.closed_flag)
+                .count() as u32
+        }
+
         /// Close staked mining pool
         /// pid: index of pool
         /// must called by admin
@@ -253,10 +261,76 @@ mod staking_mining {
                             withdraw_amount,
                         });
                     }
+
+                    return true;
                 }
             }
 
             false
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use ink_env::AccountId;
+        use ink_lang as ink;
+
+        #[ink::test]
+        fn create_pool() {
+            let mut mining = StakingMining::default();
+            assert_eq!(mining.pool_count(), 0);
+            mining.create_pool(AccountId::from([0x00; 32]), 1000);
+            assert_eq!(mining.pool_count(), 1);
+        }
+
+        #[ink::test]
+        fn close_pool_success_when_pool_exist() {
+            let mut mining = StakingMining::default();
+            assert_eq!(mining.pool_count(), 0);
+            mining.create_pool(AccountId::from([0x00; 32]), 1000);
+            assert_eq!(mining.pool_count(), 1);
+            assert_eq!(mining.close_pool(0), true);
+            assert_eq!(mining.pool_count(), 0);
+        }
+
+        #[ink::test]
+        fn close_pool_failed_when_pool_nonexist() {
+            let mut mining = StakingMining::default();
+            assert_eq!(mining.pool_count(), 0);
+            mining.create_pool(AccountId::from([0x00; 32]), 1000);
+            assert_eq!(mining.pool_count(), 1);
+            assert_eq!(mining.close_pool(1), false);
+            assert_eq!(mining.pool_count(), 1);
+        }
+
+        #[ink::test]
+        fn stack() {
+            let mut mining =
+                StakingMining::new(AccountId::from([0x01; 32]), AccountId::from([0x00; 32]));
+            assert_eq!(mining.pool_list.len(), 0);
+            mining.create_pool(AccountId::from([0x01; 32]), 1000);
+            mining.stake(0, 100);
+            let user_staked_info = mining
+                .user_staked_info
+                .get(&(AccountId::from([0x01; 32]), 0))
+                .unwrap();
+
+            assert_eq!(user_staked_info.staked_amount, 100);
+        }
+
+        #[ink::test]
+        fn stack_failed_when_pool_nonexist() {
+            let mut mining =
+                StakingMining::new(AccountId::from([0x01; 32]), AccountId::from([0x00; 32]));
+            assert_eq!(mining.pool_list.len(), 0);
+            mining.create_pool(AccountId::from([0x01; 32]), 1000);
+            mining.stake(1, 100);
+            let user_staked_info = mining
+                .user_staked_info
+                .get(&(AccountId::from([0x01; 32]), 0));
+
+            assert_eq!(user_staked_info, None);
         }
     }
 }
