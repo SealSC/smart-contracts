@@ -77,21 +77,6 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         delete minters[_minter];
     }
 
-    function setSupplyFormula(address _formula) external onlyAdmin {
-        require(_formula.isContract(), "formula must be a contract");
-
-        emit FormulaChanged(address(supplyFormula), _formula, msg.sender);
-        supplyFormula = ITokenSupplyFormula(_formula);
-    }
-
-    function mintWithFormula(address _to, uint256 _fromBlock, uint256 _toBlock, uint256 _base) external onlyMinter {
-        require(address(supplyFormula) != ZERO_ADDRESS, "formula not set");
-        (bool valid, uint256 amount) = supplyFormula.CalcSupply(_fromBlock, _toBlock, _base);
-        require(valid, "invalid param");
-
-        mint(_to, amount);
-    }
-
     function mint(address to, uint256 amount) public onlyMinter {
         require(minable, "not minable");
         require(mintEnabled, "mint disabled");
