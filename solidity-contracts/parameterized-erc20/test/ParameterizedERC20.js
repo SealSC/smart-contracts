@@ -145,16 +145,5 @@ contract("ParameterizedERC20", async accounts => {
 
     tx = await testToken.transfer(accounts[4], "1", {from: blackListTestingAddr}).catch(_=>{return null})
     assert.equal(tx, null, `failed: tx must failed due to sender was in blacklist`)
-
   })
-  //    function test_addToBlackList() public {
-//        bool blocked = testToken.blackList(blackListTestingAddr);
-//        Assert.equal(blocked, false, "failed: must not in black list before testing");
-//
-//        testToken.addToBlackList(blackListTestingAddr);
-//        blocked = testToken.blackList(blackListTestingAddr);
-//
-//        Assert.equal(blocked, true, "failed: must in black list before testing");
-//
-//    }
 });
