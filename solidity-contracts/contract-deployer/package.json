@@ -1,7 +1,7 @@
 {
   "name": "contract-deployer-test",
   "version": "1.0.0",
-  "description": "testing of SealSC's smart-contracts-testing",
+  "description": "testing of SealSC's solidity smart-contracts",
   "main": "package.json",
   "directories": {
     "test": "test"
