@@ -101,6 +101,23 @@ contract("StakingMining", async accounts => {
 
     await pool.stake(testPoolIdx, "100", {from: stakingAccount});
   })
+<<<<<<< HEAD
+=======
+//    function test_collect() public {
+//        (uint256 staked, uint256 lastCollect) = pool.userStakeInfo(address (this), testPoolIdx);
+//        (IERC20 sToken, uint256 factor, uint256 closedBlock, bool closedFlag, bool created) = pool.poolList(testPoolIdx);
+//        uint256 currentBlock = block.number;
+//
+//        uint256 rewardAmount = (staked * (currentBlock - lastCollect) * factor) / rewardBP;
+//        uint256 beforeBalance = rewardToken.balanceOf(address(this));
+//        pool.collect(testPoolIdx, false);
+//        uint256 afterBalance = rewardToken.balanceOf(address(this));
+//        (uint256 stakedAfter,) = pool.userStakeInfo(address (this), testPoolIdx);
+//
+//        Assert.equal(afterBalance, beforeBalance + rewardAmount, "failed: last collect must be current block");
+//        Assert.equal(staked, stakedAfter, "failed: staked amount was modified");
+//    }
+>>>>>>> b5e2a55... using truffle test & solidity-coverage for staking-mining
 
   it(`test close pool`, async ()=>{
     let poolInfo = await pool.poolList.call(testPoolIdx)
