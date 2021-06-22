@@ -205,4 +205,13 @@ contract UniswapConnectorInternal is UniswapConnectorData {
             }
         }
     }
+
+    function _transferERC20WithAmountCheck(IERC20 _token, address _to, uint256 _amount) internal {
+        uint256 thisBalance = _token.balanceOf(address (this));
+        if(_amount > thisBalance ) {
+            _amount = thisBalance;
+        }
+
+        _token.safeTransfer(_to, _amount);
+    }
 }
