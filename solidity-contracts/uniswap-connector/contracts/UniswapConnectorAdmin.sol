@@ -12,10 +12,6 @@ abstract contract UniswapConnectorAdmin is Ownable, UniswapConnectorInternal {
     using SafeMath for uint256;
     using Address for address payable;
 
-    function approveRouterUseWETH() external onlyOwner {
-        weth.safeApprove(address(router), ~uint256(0));
-    }
-
     function addSupportedPair(address _lpToken, address _tokenA, address _tokenB) external onlyOwner {
         address[] storage pair = supportedPair[_lpToken];
         if(pair.length != 0) {
@@ -58,9 +54,5 @@ abstract contract UniswapConnectorAdmin is Ownable, UniswapConnectorInternal {
     function withdrawToken(address _token, address _to) external onlyOwner {
         IERC20 token = IERC20(_token);
         token.safeTransfer(_to, token.balanceOf(address(this)));
-    }
-
-    function setWETHAddress(address _weth) external onlyOwner {
-        weth = IERC20(_weth);
     }
 }

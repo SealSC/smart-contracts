@@ -23,7 +23,13 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
         _;
     }
 
-    constructor(address _owner) public Ownable(_owner) {}
+    constructor(address _owner, address _newRouter, address _newFactory, address _weth) public Ownable(_owner) {
+        router = IUniswapV2Router02(_newRouter);
+        factory = IUniswapV2Factory(_newFactory);
+        weth = IERC20(_weth);
+
+        weth.safeApprove(address(router), ~uint256(0));
+    }
 
     function flashRemoveLP(
         address _lp,
