@@ -51,16 +51,10 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
                 }
                 _to.sendValue(amountA);
             } else {
-                if(amountA > IERC20(tokenA).balanceOf(address(this))) {
-                    amountA = IERC20(tokenA).balanceOf(address(this));
-                }
-                IERC20(tokenA).safeTransfer(_to, amountA);
+                _transferERC20WithAmountCheck(IERC20(tokenA), _to, amountA);
             }
 
-            if(amountB > IERC20(tokenB).balanceOf(address(this))) {
-                amountB = IERC20(tokenB).balanceOf(address(this));
-            }
-            IERC20(tokenB).safeTransfer(_to, amountB);
+            _transferERC20WithAmountCheck(IERC20(tokenB), _to, amountB);
         }
 
         return (amountA, amountB);
@@ -97,10 +91,7 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
             }
             _to.sendValue(finalOutAmount);
         } else {
-            if(finalOutAmount > IERC20(_outToken).balanceOf(address(this))) {
-                finalOutAmount = IERC20(_outToken).balanceOf(address(this));
-            }
-            IERC20(_outToken).safeTransfer(_to, finalOutAmount);
+            _transferERC20WithAmountCheck(IERC20(_outToken), _to, finalOutAmount);
         }
 
         return finalOutAmount;
