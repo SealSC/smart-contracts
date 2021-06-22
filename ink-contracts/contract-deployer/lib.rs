@@ -5,9 +5,11 @@ use ink_lang as ink;
 #[ink::contract]
 mod contract_deployer {
     use ink_prelude::{string::String, vec::Vec};
-    /// Defines the storage of your contract.
-    /// Add new fields to the below struct in order
-    /// to add new static storage fields to your contract.
+
+    /// Contract Strorage
+    /// owner: the account id of contract's owner
+    /// deploy_approver: the account id of the deploy approver
+    /// preset_contracts: the preset contracts
     #[ink(storage)]
     pub struct ContractDeployer {
         /// Stores a single `bool` value on the storage.
@@ -17,7 +19,8 @@ mod contract_deployer {
     }
 
     impl ContractDeployer {
-        /// Constructor that initializes the `bool` value to the given `init_value`.
+        /// Construct of ContractDeployer
+        /// owner: the account id of contract's owner
         #[ink(constructor)]
         pub fn new(owner: AccountId) -> Self {
             Self {
@@ -27,11 +30,19 @@ mod contract_deployer {
             }
         }
 
+        /// Default Construct of ContractDeployer
+        /// owner: the account id of caller
         #[ink(constructor)]
         pub fn default() -> Self {
             Self::new(Self::env().caller())
         }
 
+        /// Add preset contract
+        /// name: the name of the contract
+        /// fee: u128 of the fee
+        /// disabled: flag indicated as the diabled state of the contract
+        /// code_hash: the code hash of the contract
+        /// return: true if sucess otherwise false
         #[ink(message)]
         pub fn add_preset_contract(
             &mut self,
@@ -53,11 +64,16 @@ mod contract_deployer {
             true
         }
 
+        /// Get the count of preset contracts
+        /// return: u128
         #[ink(message)]
         pub fn preset_count(&self) -> u128 {
             self.preset_contracts.len() as u128
         }
 
+        /// Disable preset contract
+        /// idx: the index of the disable preset contract
+        /// Return: true if success
         #[ink(message)]
         pub fn disable_preset_contract(&mut self, idx: u128) -> bool {
             if self.env().caller() != self.owner {
@@ -72,6 +88,9 @@ mod contract_deployer {
             false
         }
 
+        /// Enable disabled preset contract
+        /// idx: the index of the disabled preset contract
+        /// Return: true if success
         #[ink(message)]
         pub fn enable_preset_contract(&mut self, idx: u128) -> bool {
             if self.env().caller() != self.owner {
@@ -86,6 +105,10 @@ mod contract_deployer {
             false
         }
 
+        /// Update a preset contract's name
+        /// idx: the index of the preset contract
+        /// name: the name want updated
+        /// Return: true if success
         #[ink(message)]
         pub fn update_preset_contract_name(&mut self, idx: u128, name: String) -> bool {
             if self.env().caller() != self.owner {
@@ -100,6 +123,10 @@ mod contract_deployer {
             false
         }
 
+        /// Update a preset contract's fee value
+        /// idx: the idex of the preset contract
+        /// fee: the value of the fee
+        /// Return: true if success
         #[ink(message)]
         pub fn update_preset_contract_fee(&mut self, idx: u128, fee: Balance) -> bool {
             if self.env().caller() != self.owner {
@@ -114,6 +141,9 @@ mod contract_deployer {
             false
         }
 
+        /// Set deploy approver for this contract
+        /// approver: the account id of the approver
+        /// Return: true if success
         #[ink(message)]
         pub fn set_deploy_approver(&mut self, approver: AccountId) -> bool {
             if self.env().caller() != self.owner {
@@ -124,6 +154,13 @@ mod contract_deployer {
             true
         }
 
+        /// Deploy preset contract
+        /// idx: the index of the preset contract
+        /// code_sig: the signature of the contract's code
+        /// deploy_hash: the hash of the deploy
+        /// deploy_sig: the signature of the deploy
+        /// salt: the salt value
+        /// byte_code: the byte codes of the preset contract
         #[ink(message)]
         pub fn deploy_preset_contract(
             &mut self,
