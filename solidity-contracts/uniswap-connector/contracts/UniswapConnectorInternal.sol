@@ -165,10 +165,6 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         return (amountA, amountB);
     }
 
-    function _swapLPReturnedToAnotherToken() internal pure {
-        revert("not supported yet");
-    }
-
     function _swapLPReturnETHForToken(uint256 _inAmount, address _outToken) internal returns(uint256) {
         address[] memory path = new address[](2);
         path[0] = address(weth);
