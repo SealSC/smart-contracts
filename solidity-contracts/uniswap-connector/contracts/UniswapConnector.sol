@@ -70,22 +70,18 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
         uint256 finalOutAmount = 0;
         uint256 outBefore = 0;
 
-        if(_outToken != tokenA && _outToken  != tokenB) {
-            _swapLPReturnedToAnotherToken();
-        } else {
-            address inToken = tokenA;
-            amountAAfter = amountAAfter.sub(amountABefore);
-            outBefore = amountBBefore;
+        address inToken = tokenA;
+        amountAAfter = amountAAfter.sub(amountABefore);
+        outBefore = amountBBefore;
 
-            if(_outToken == tokenA) {
-                inToken = tokenB;
-                amountAAfter = amountBAfter.sub(amountBBefore);
-                outBefore = amountABefore;
-            }
-
-            finalOutAmount = _swapLPReturnedForOneToken(inToken, _outToken, amountAAfter);
-            finalOutAmount = finalOutAmount.sub(outBefore);
+        if(_outToken == tokenA) {
+            inToken = tokenB;
+            amountAAfter = amountBAfter.sub(amountBBefore);
+            outBefore = amountABefore;
         }
+
+        finalOutAmount = _swapLPReturnedForOneToken(inToken, _outToken, amountAAfter);
+        finalOutAmount = finalOutAmount.sub(outBefore);
 
         if(_outToken == ZERO_ADDRESS) {
             if(finalOutAmount > address(this).balance) {
