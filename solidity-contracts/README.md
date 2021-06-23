@@ -38,33 +38,31 @@ truffle compile
 
 # Testing
 
-We are using remix-tests libs for the testing part.
+We are using [truffle](https://www.trufflesuite.com/docs/truffle/quickstart) & [solidity-coverage](https://github.com/sc-forks/solidity-coverage) to testing solidity contracts.
 
-1. Install remix-tests libs.
-```
-npm -g install @remix-project/remix-tests
-```  
+### dependencies
 
-2. cd to the contract folder you want to test.
+node.js v12+  
+truffle v5.3.11  
 
-3. run ```remix-tests test/```
+### testing
 
+Clone the project and checkout the low-code-platform-dev branch
 
-example:
 ```
 git clone https://github.com/SealSC/smart-contracts.git
-
-cd smart-contracts/solidity-contracts/
-
+cd smart-contracts
 git checkout low-code-platform-dev
 
-git pull
-
-cd contract-deployer
-
-remix-tests test/
+chmod +x ./run-test.sh
 ```  
 
+Using run-test.sh we provided to run all test
+```
+./run-test.sh show
+```
+
+**Note**: the argument "show" will try to open the test report with your default browser.
 
 # Usage
 please see the README.md file in the sub folder of the contract you are interesting in.  
