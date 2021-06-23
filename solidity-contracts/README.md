@@ -51,10 +51,16 @@ Clone the project and checkout the low-code-platform-dev branch
 
 ```
 git clone https://github.com/SealSC/smart-contracts.git
+
 cd smart-contracts
+
 git checkout low-code-platform-dev
 
+
+cd ./solidity-contracts
+
 chmod +x ./run-test.sh
+
 ```  
 
 Using run-test.sh we provided to run all test
