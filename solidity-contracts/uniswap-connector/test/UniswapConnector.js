@@ -268,6 +268,15 @@ contract("UniswapConnector", async accounts => {
   })
 
   it(`test flash get lp`, async ()=>{
+    const lpReceiver = baseAccount
+
+    let beforeAWPair = await uniPairAandWETH.methods.balanceOf(lpReceiver).call()
+    beforeAWPair = new Decimal(beforeAWPair)
+    let beforeBWPair = await uniPairBandWETH.methods.balanceOf(lpReceiver).call()
+    beforeBWPair = new Decimal(beforeBWPair.toString())
+    let beforeABPair = await uniPairAandB.methods.balanceOf(lpReceiver).call()
+    beforeABPair = new Decimal(beforeABPair.toString())
+    
     await tokenA.approve(connector.address, initSupply)
     await tokenB.approve(connector.address, initSupply)
     await fakeWETH.approve(connector.address, initSupply)
@@ -304,6 +313,17 @@ contract("UniswapConnector", async accounts => {
     ).catch(e=>{
       console.log("1")
     })
+
+    let afterAWPair = await uniPairAandWETH.methods.balanceOf(lpReceiver).call()
+    afterAWPair = new Decimal(afterAWPair)
+    let afterBWPair = await uniPairBandWETH.methods.balanceOf(lpReceiver).call()
+    afterBWPair = new Decimal(afterBWPair.toString())
+    let afterABPair = await uniPairAandB.methods.balanceOf(lpReceiver).call()
+    afterABPair = new Decimal(afterABPair.toString())
+
+    assert.isTrue(afterAWPair.gt(beforeAWPair), `failed: eth not received from LP removing`)
+    assert.isTrue(afterBWPair.gt(beforeBWPair), `failed: token a not received from LP removing`)
+    assert.isTrue(afterABPair.gt(beforeABPair), `failed: token b not received from LP removing`)
   })
 
   it(`test flash get lp should failed`, async ()=>{
