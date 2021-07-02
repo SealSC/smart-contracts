@@ -56,7 +56,6 @@ cd smart-contracts
 
 git checkout low-code-platform-dev
 
-
 cd ./solidity-contracts
 
 chmod +x ./run-test.sh
