@@ -165,10 +165,6 @@ contract UniswapConnectorInternal is UniswapConnectorData {
         return (amountA, amountB);
     }
 
-    function _swapLPReturnedToAnotherToken() internal pure {
-        revert("not supported yet");
-    }
-
     function _swapLPReturnETHForToken(uint256 _inAmount, address _outToken) internal returns(uint256) {
         address[] memory path = new address[](2);
         path[0] = address(weth);
@@ -208,5 +204,14 @@ contract UniswapConnectorInternal is UniswapConnectorData {
                 return _swapLPReturnTokenForToken(_inToken, _inAmount, _outToken);
             }
         }
+    }
+
+    function _transferERC20WithAmountCheck(IERC20 _token, address _to, uint256 _amount) internal {
+        uint256 thisBalance = _token.balanceOf(address (this));
+        if(_amount > thisBalance ) {
+            _amount = thisBalance;
+        }
+
+        _token.safeTransfer(_to, _amount);
     }
 }

@@ -7,9 +7,17 @@ mod parameterized_erc20 {
     use ink_prelude::{string::String, vec::Vec};
     use ink_storage::collections::HashMap;
 
-    /// Defines the storage of your contract.
-    /// Add new fields to the below struct in order
-    /// to add new static storage fields to your contract.
+    /// ParameterizedErc20 Storage
+    /// owner: owner of this contract
+    /// name: name of contract
+    /// symbol: symbol of contract
+    /// minable: flag indicated as this contract is minable
+    /// decimals: decimal of this contract
+    /// total_supply: total supply of this contract
+    /// mint_enable_status: flag indicated as mint enable status
+    /// blanace_of: hashmap to store account's balance
+    /// minters: hashmap to store minters. balance and status
+    /// black_list: account blacklist
     #[ink(storage)]
     pub struct ParameterizedErc20 {
         owner: AccountId,
@@ -24,6 +32,9 @@ mod parameterized_erc20 {
         black_list: HashMap<AccountId, bool>,
     }
 
+    /// Add Minter Event
+    /// minter: minter which added
+    /// factor: factor of the minter
     #[ink(event)]
     pub struct AddMinterEvent {
         #[ink(topic)]
@@ -31,6 +42,9 @@ mod parameterized_erc20 {
         factor: Balance,
     }
 
+    /// Revmove Minter Event
+    /// minter: minter which removed
+    /// factor: factor of the minter
     #[ink(event)]
     pub struct RemoveMinterEvent {
         #[ink(topic)]
@@ -38,6 +52,10 @@ mod parameterized_erc20 {
         factor: Balance,
     }
 
+    /// Transfer Event
+    /// from: the tranfer from
+    /// to: the transfer to
+    /// value: the transfer value
     #[ink(event)]
     pub struct TransferEvent {
         from: AccountId,
@@ -45,6 +63,10 @@ mod parameterized_erc20 {
         value: Balance,
     }
 
+    /// Mint to Event
+    /// minter: account id of the minter
+    /// to: account id of to account
+    /// amount: amount of the mint
     #[ink(event)]
     pub struct MintToEvent {
         minter: AccountId,
@@ -53,7 +75,13 @@ mod parameterized_erc20 {
     }
 
     impl ParameterizedErc20 {
-        /// Constructor that initializes the `bool` value to the given `init_value`.
+        /// Contract Construct
+        /// owner: owner of this contract
+        /// name: name of this contract
+        /// symbol: symbol of this contract
+        /// decimals: decimals of this contract
+        /// minable: flag indicated as thsi contract is minable
+        /// init_supply: total balance of this contract
         #[ink(constructor)]
         pub fn new(
             owner: AccountId,
@@ -61,7 +89,7 @@ mod parameterized_erc20 {
             symbol: String,
             decimals: u8,
             minable: bool,
-            _init_supply: Balance,
+            init_supply: Balance,
         ) -> Self {
             Self {
                 owner,
@@ -69,17 +97,25 @@ mod parameterized_erc20 {
                 symbol,
                 decimals,
                 minable,
-                total_supply: 0,
+                total_supply: init_supply,
                 mint_enable_status: false,
                 minters: HashMap::new(),
-                balance_of: HashMap::new(),
+                balance_of: {
+                    let mut balance_of = HashMap::new();
+                    balance_of.insert(owner, init_supply);
+                    balance_of
+                },
                 black_list: HashMap::new(),
             }
         }
 
-        /// Constructor that initializes the `bool` value to `false`.
-        ///
-        /// Constructors can delegate to other constructors.
+        /// Construct Contract with Default Values
+        /// owner: caller()
+        /// name: empty string
+        /// symbol: empty string
+        /// decimals: empty string
+        /// minable: false
+        /// init_supply: 0
         #[ink(constructor)]
         pub fn default() -> Self {
             Self::new(
@@ -92,6 +128,18 @@ mod parameterized_erc20 {
             )
         }
 
+        /// Get this contract mint enable status
+        /// Return value true / false
+        #[ink(message)]
+        pub fn get_mint_enable_status(&self) -> bool {
+            if self.env().caller() != self.owner {
+                return false;
+            }
+            self.mint_enable_status
+        }
+
+        /// Set this contract mint enable status
+        /// enable: true / false
         #[ink(message)]
         pub fn set_mint_enable_status(&mut self, enabled: bool) -> bool {
             if self.env().caller() != self.owner {
@@ -101,6 +149,9 @@ mod parameterized_erc20 {
             true
         }
 
+        /// Add an minter to contract
+        /// address: account id of this minter
+        /// factor: factor of this minter
         #[ink(message)]
         pub fn add_minter(&mut self, address: AccountId, factor: Balance) -> bool {
             if self.minters.contains_key(&address) {
@@ -117,6 +168,9 @@ mod parameterized_erc20 {
             true
         }
 
+        /// Update minter's factor
+        /// minters: the array of minters's addrees
+        /// factor: the factor need to set
         #[ink(message)]
         pub fn update_minter_factor(&mut self, minters: Vec<AccountId>, factor: Balance) -> bool {
             if self.env().caller() != self.owner {
@@ -128,6 +182,19 @@ mod parameterized_erc20 {
             true
         }
 
+        /// Get an minter's factor
+        /// Return u128 balance of factor
+        #[ink(message)]
+        pub fn get_minter_factor(&mut self, minter: AccountId) -> Balance {
+            if self.env().caller() != self.owner {
+                return 0;
+            }
+
+            self.minters.get(&minter).map(|res| res.0).unwrap_or(0)
+        }
+
+        /// Remove an minter from contract
+        /// minter: the address of the minter
         #[ink(message)]
         pub fn remove_minter(&mut self, minter: AccountId) -> bool {
             if self.env().caller() != self.owner {
@@ -135,6 +202,7 @@ mod parameterized_erc20 {
             }
 
             if self.minters.contains_key(&minter) && !self.minters[&minter].1 {
+                self.minters[&minter].0 = 0;
                 self.minters[&minter].1 = true;
                 self.env().emit_event(RemoveMinterEvent {
                     minter,
@@ -146,6 +214,8 @@ mod parameterized_erc20 {
             false
         }
 
+        /// Add an minter to blacklist
+        /// minter: the account id of the minter
         #[ink(message)]
         pub fn add_to_blacklist(&mut self, minter: AccountId) -> bool {
             if self.env().caller() != self.owner {
@@ -160,6 +230,8 @@ mod parameterized_erc20 {
             true
         }
 
+        /// Remove an minter from blacklist
+        /// minter: the account id of the minter
         #[ink(message)]
         pub fn remove_from_blacklist(&mut self, minter: AccountId) -> bool {
             if self.env().caller() != self.owner {
@@ -174,6 +246,9 @@ mod parameterized_erc20 {
             true
         }
 
+        /// Process mint
+        /// to: the receiver's account id of the amount
+        /// amount: the amount of this mint
         #[ink(message)]
         pub fn mint(&mut self, to: AccountId, amount: Balance) -> bool {
             if self.minable && self.mint_enable_status {
@@ -199,6 +274,107 @@ mod parameterized_erc20 {
                 }
             }
             false
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use ink_lang as ink;
+
+        #[ink::test]
+        fn default_works() {
+            let erc20 = ParameterizedErc20::default();
+            assert_eq!(erc20.get_mint_enable_status(), false);
+        }
+
+        #[ink::test]
+        fn it_works() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                1000,
+            );
+
+            assert_eq!(erc20.get_mint_enable_status(), false);
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.get_mint_enable_status(), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x02; 32]), 100), true);
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 100);
+            assert_eq!(
+                erc20.update_minter_factor(vec![AccountId::from([0x02; 32])], 50),
+                true
+            );
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 50);
+            assert_eq!(erc20.remove_minter(AccountId::from([0x02; 32])), true);
+            assert_eq!(erc20.get_minter_factor(AccountId::from([0x02; 32])), 0);
+            assert_eq!(erc20.add_to_blacklist(AccountId::from([0x02; 32])), true);
+            assert_eq!(
+                erc20.remove_from_blacklist(AccountId::from([0x02; 32])),
+                true
+            );
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_not_minable() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                false,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_mint_disabled() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(false), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_false_when_mint_status_enabeled_but_minter_not_add() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), false);
+        }
+
+        #[ink::test]
+        fn mint_should_return_true_when_everything_is_ok() {
+            let mut erc20 = ParameterizedErc20::new(
+                AccountId::from([0x01; 32]),
+                "name".into(),
+                "symbol".into(),
+                0,
+                true,
+                0,
+            );
+            assert_eq!(erc20.set_mint_enable_status(true), true);
+            assert_eq!(erc20.add_minter(AccountId::from([0x01; 32]), 0), true);
+            assert_eq!(erc20.mint(AccountId::from([0x02; 32]), 100), true);
         }
     }
 }
