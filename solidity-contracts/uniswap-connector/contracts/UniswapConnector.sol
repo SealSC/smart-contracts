@@ -23,7 +23,13 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
         _;
     }
 
-    constructor(address _owner) public Ownable(_owner) {}
+    constructor(address _owner, address _newRouter, address _newFactory, address _weth) public Ownable(_owner) {
+        router = IUniswapV2Router02(_newRouter);
+        factory = IUniswapV2Factory(_newFactory);
+        weth = IERC20(_weth);
+
+        weth.safeApprove(address(router), ~uint256(0));
+    }
 
     function flashRemoveLP(
         address _lp,
@@ -45,16 +51,10 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
                 }
                 _to.sendValue(amountA);
             } else {
-                if(amountA > IERC20(tokenA).balanceOf(address(this))) {
-                    amountA = IERC20(tokenA).balanceOf(address(this));
-                }
-                IERC20(tokenA).safeTransfer(_to, amountA);
+                _transferERC20WithAmountCheck(IERC20(tokenA), _to, amountA);
             }
 
-            if(amountB > IERC20(tokenB).balanceOf(address(this))) {
-                amountB = IERC20(tokenB).balanceOf(address(this));
-            }
-            IERC20(tokenB).safeTransfer(_to, amountB);
+            _transferERC20WithAmountCheck(IERC20(tokenB), _to, amountB);
         }
 
         return (amountA, amountB);
@@ -70,9 +70,7 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
         uint256 finalOutAmount = 0;
         uint256 outBefore = 0;
 
-        if(_outToken != tokenA && _outToken  != tokenB) {
-            _swapLPReturnedToAnotherToken();
-        } else {
+        {
             address inToken = tokenA;
             amountAAfter = amountAAfter.sub(amountABefore);
             outBefore = amountBBefore;
@@ -93,10 +91,7 @@ contract UniswapConnector is UniswapConnectorAdmin, UniswapConnectorViews {
             }
             _to.sendValue(finalOutAmount);
         } else {
-            if(finalOutAmount > IERC20(_outToken).balanceOf(address(this))) {
-                finalOutAmount = IERC20(_outToken).balanceOf(address(this));
-            }
-            IERC20(_outToken).safeTransfer(_to, finalOutAmount);
+            _transferERC20WithAmountCheck(IERC20(_outToken), _to, finalOutAmount);
         }
 
         return finalOutAmount;

@@ -45,7 +45,7 @@ We are using [truffle](https://www.trufflesuite.com/docs/truffle/quickstart) & [
 node.js v12+  
 truffle v5.3.11  
 
-### testing  
+### testing
 
 Clone the project and checkout the low-code-platform-dev branch
 
