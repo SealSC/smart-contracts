@@ -30,19 +30,19 @@ contract Simple3Role is Ownable {
         return executor[addr];
     }
 
-    function addAdministrator(address addr) external onlyOwner {
+    function addAdministrator(address addr) public onlyOwner {
         administrator[addr] = true;
     }
 
-    function removeAdministrator(address addr) external onlyOwner {
+    function removeAdministrator(address addr) public onlyOwner {
         administrator[addr] = false;
     }
 
-    function addExecutor(address addr) external onlyAdmin {
+    function addExecutor(address addr) public onlyAdmin {
         executor[addr] = true;
     }
 
-    function removeExecutor(address addr) external onlyAdmin {
+    function removeExecutor(address addr) public onlyAdmin {
         executor[addr] = false;
     }
 }
