@@ -9,27 +9,31 @@ import "./SealNFTPeriphery.sol";
 contract SealNFT is ERC721, Simple3Role, SimpleSealSCSignature {
     using SafeMath for uint256;
 
-    bool public initialized;
     bool public sequentialID;
     uint256 public nextID;
 
     SealNFTPeriphery public sealNFTPeriphery;
 
-    modifier inited() {
-        require(initialized, "not initialized");
-        _;
-    }
-
     constructor(
         address _owner,
         string memory _name,
         string memory _symbol,
-        address _periphery) public Simple3Role(_owner) ERC721(_name, _symbol) {
+        address _periphery,
+        bool _sequentialID) public Simple3Role(_owner) ERC721(_name, _symbol) {
         sealNFTPeriphery = SealNFTPeriphery(_periphery);
+        sequentialID = _sequentialID;
     }
 
     function setBaseURI(string calldata _newURI) external onlyAdmin {
         _setBaseURI(_newURI);
+    }
+
+    function tokenURI(uint256 _id) override view public returns(string memory uri) {
+        if(bytes(baseURI()).length != 0) {
+            return super.tokenURI(_id);
+        } else {
+            return sealNFTPeriphery.uriOf(address(this), _id);
+        }
     }
 
     function getID(string memory _metadata) internal returns(uint256 id) {
