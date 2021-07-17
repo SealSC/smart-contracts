@@ -8,7 +8,6 @@ contract ERC20TimeLock is Ownable {
    using SafeERC20 for IERC20;
    using SafeMath for uint256;
 
-   IERC20 public lockedToken;
    uint256 public minLockedTime = 365 * 24 * 3600;
 
    struct userLockedInfo {
@@ -19,6 +18,7 @@ contract ERC20TimeLock is Ownable {
    }
 
    mapping (address=>userLockedInfo[]) public lockList;
+   mapping (address=>bool) public supportedToken;
 
    event AddLockedInfo(address indexed user, address indexed token, uint256 amount, uint256 unlockedTime, uint256 idx);
    event AddLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
@@ -26,14 +26,10 @@ contract ERC20TimeLock is Ownable {
    event SetNewUnlockedTime(address indexed user,  uint256 idx, uint256 unlockedTime);
    event RemoveLockedInfo(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
    event Withdrawn(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
+   event SupportedTokenAdded(address token);
+   event SupportedTokenRemoved(address token);
 
-   constructor(address _owner, address _initToken) public Ownable(_owner) {
-      lockedToken = IERC20(_initToken);
-   }
-
-   function addUser(address _user, uint256 _amount, uint256 _unlockedTime) external onlyOwner {
-      addUserWithToken(_user, _amount, _unlockedTime, address(lockedToken));
-   }
+   constructor(address _owner, address _initToken) public Ownable(_owner) {}
 
    function removeUser(address _user, uint256 _idx) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
@@ -45,13 +41,14 @@ contract ERC20TimeLock is Ownable {
       uli.amount = 0;
    }
 
-   function addUserWithToken(address _user, uint256 _amount, uint256 _unlockedTime, address _token) public onlyOwner {
+   function lock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) external {
+      require(supportedToken[_token], "not supported token");
       require(_unlockedTime > block.timestamp + minLockedTime, "unlocked time too small");
 
       IERC20 token = IERC20(_token);
 
       token.safeTransferFrom(msg.sender, address(this), _amount);
-      userLockedInfo[] storage uList = lockList[_user];
+      userLockedInfo[] storage uList = lockList[_forUser];
       emit AddLockedInfo(_user, _token, _amount, _unlockedTime, uList.length);
 
       uList.push(userLockedInfo({
@@ -60,6 +57,16 @@ contract ERC20TimeLock is Ownable {
          token: token,
          withdrawn: false
       }));
+   }
+
+   function addSupportedToken(address _token) external onlyOwner {
+      supportedToken[_token] = true;
+      emit SupportedTokenAdded(_token);
+   }
+
+   function removeSupportedToken(address _token) external onlyOwner {
+      supportedToken[_token] = false;
+      emit SupportedTokenRemoved(_token);
    }
 
    function _getUserLockedInfo(address _user, uint256 _idx) internal view returns(userLockedInfo storage uli) {
