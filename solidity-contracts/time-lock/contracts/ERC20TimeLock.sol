@@ -21,8 +21,8 @@ contract ERC20TimeLock is Ownable {
    mapping (address=>bool) public supportedToken;
 
    event AddLockedInfo(address indexed user, address indexed token, uint256 amount, uint256 unlockedTime, uint256 idx);
-   event AddLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
-   event SubLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
+   event IncreaseLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
+   event ReduceLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
    event SetNewUnlockedTime(address indexed user,  uint256 idx, uint256 unlockedTime);
    event RemoveLockedInfo(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
    event Withdrawn(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
@@ -49,7 +49,7 @@ contract ERC20TimeLock is Ownable {
 
       token.safeTransferFrom(msg.sender, address(this), _amount);
       userLockedInfo[] storage uList = lockList[_forUser];
-      emit AddLockedInfo(_user, _token, _amount, _unlockedTime, uList.length);
+      emit AddLockedInfo(_forUser, _token, _amount, _unlockedTime, uList.length);
 
       uList.push(userLockedInfo({
          amount: _amount,
@@ -83,24 +83,24 @@ contract ERC20TimeLock is Ownable {
       emit SetNewUnlockedTime(_user, _idx, _newUnlockedTime);
    }
 
-   function subUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
+   function reduceUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       require(!uli.withdrawn, "token has been withdrawn");
 
       uli.token.safeTransfer(msg.sender, _amount);
       uli.amount = uli.amount.sub(_amount);
 
-      emit SubLockedAmount(_user, address(uli.token), _idx, _amount);
+      emit ReduceLockedAmount(_user, address(uli.token), _idx, _amount);
    }
 
-   function addUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
+   function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       require(!uli.withdrawn, "token has been withdrawn");
 
       uli.token.safeTransferFrom(msg.sender, address(this), _amount);
       uli.amount = uli.amount.add(_amount);
 
-      emit AddLockedAmount(_user, address(uli.token), _idx, _amount);
+      emit IncreaseLockedAmount(_user, address(uli.token), _idx, _amount);
    }
 
    function setNewMinLockedTime(uint256 _newMinLockedTime) external onlyOwner {
