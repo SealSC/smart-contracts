@@ -6,7 +6,7 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "./SealNFTPeriphery.sol";
 
-contract SealNFT is ERC721, Simple3Role, SimpleSealSCSignature {
+contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeMath for uint256;
 
     bool public sequentialID;
@@ -18,7 +18,7 @@ contract SealNFT is ERC721, Simple3Role, SimpleSealSCSignature {
         address _owner,
         string memory _name,
         string memory _symbol,
-        address _periphery,
+        address payable _periphery,
         bool _sequentialID) public Simple3Role(_owner) ERC721(_name, _symbol) {
         sealNFTPeriphery = SealNFTPeriphery(_periphery);
         sequentialID = _sequentialID;
@@ -55,9 +55,9 @@ contract SealNFT is ERC721, Simple3Role, SimpleSealSCSignature {
         _mint(_to, id);
     }
 
-    function mintWithSig(address _to, string calldata _metadata, bytes calldata _sig) external onlyExecutor {
+    function mintWithSig(address _to, string calldata _metadata, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier) external onlyExecutor {
         uint256 id = getID(_metadata);
-        (, bool stored) = sealNFTPeriphery.storeWithVerify(id, _sig);
+        (, bool stored) = sealNFTPeriphery.storeWithVerify(id, _sig, _feeCategory, _feeSupplier);
 
         require(stored, "invalid signature");
         _mint(_to, id);
