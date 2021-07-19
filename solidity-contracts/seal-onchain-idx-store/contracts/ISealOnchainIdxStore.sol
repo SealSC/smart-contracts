@@ -10,7 +10,7 @@ interface ISealOnchainIdxStore {
     }
 
     function store(uint256 _key) external returns(bool exists, bool stored);
-    function storeWithVerify(uint256 _key, bytes calldata _sig) external returns(bool exists, bool stored);
+    function storeWithVerify(uint256 _key, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier) payable external returns(bool exists, bool stored);
     function getStored(address _recorder, uint256 _key) view external returns(address recorder,uint256 key, uint256 blk, bytes memory sig);
     function validSigner(address _signer) view external returns(bool valid);
 }

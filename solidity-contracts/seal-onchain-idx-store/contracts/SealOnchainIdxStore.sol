@@ -5,8 +5,9 @@ import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/ECDSA.sol";
 import "./ISealOnchainIdxStore.sol";
+import "../../contract-libs/seal-sc/Cashier.sol";
 
-contract SealOnchainIdxStore is ISealOnchainIdxStore, Simple3Role, SimpleSealSCSignature {
+contract SealOnchainIdxStore is ISealOnchainIdxStore, Cashier, Simple3Role, SimpleSealSCSignature {
     using SafeMath for uint256;
     using ECDSA for bytes32;
     uint256 public idxCount;
@@ -43,14 +44,19 @@ contract SealOnchainIdxStore is ISealOnchainIdxStore, Simple3Role, SimpleSealSCS
         return storeID(id, _key, new bytes(0));
     }
 
-    function storeWithVerify(uint256 _key, bytes calldata _sig)
-        override external returns(bool exists, bool stored) {
+    function storeWithVerify(uint256 _key, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier)
+        override payable external returns(bool exists, bool stored) {
+
+        require(supportedFee[_feeCategory].exists, "not supported fee category");
+
         bytes32 id = getStoreID(msg.sender, _key);
         address signer = id.recover(_sig);
 
         if(!signers[signer]) {
             return (false, false);
         }
+
+        super._chargeFeeByAmount(_feeCategory, _feeSupplier);
 
         return storeID(id, _key, _sig);
     }
@@ -71,7 +77,15 @@ contract SealOnchainIdxStore is ISealOnchainIdxStore, Simple3Role, SimpleSealSCS
         signers[_signer] = false;
     }
 
-    function setSigner(address _signer) external onlyAdmin{
+    function setSigner(address _signer) external onlyAdmin {
         signers[_signer] = true;
+    }
+
+    function setFeeInfo(uint256 _feeCategory, address _currency, uint256 _amount, address payable _beneficiary) external onlyAdmin {
+        super._setFeeInfo(_feeCategory, _currency, _amount, 0, _beneficiary);
+    }
+
+    function removeFeeInfo(uint256 _feeCategory) external onlyAdmin {
+        super._removeFeeInfo(_feeCategory);
     }
 }
