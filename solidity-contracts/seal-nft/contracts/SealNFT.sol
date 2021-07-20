@@ -14,7 +14,7 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
 
     SealNFTPeriphery public sealNFTPeriphery;
 
-    event Deployed(address nftContract);
+    event Deployed(address nftContract, address theOwner, string nftName, string nftSymbol);
     constructor(
         address _owner,
         string memory _name,
@@ -24,7 +24,7 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         sealNFTPeriphery = SealNFTPeriphery(_periphery);
         sequentialID = _sequentialID;
 
-        emit Deployed(address(this));
+        emit Deployed(address(this), _owner, _name, _symbol);
     }
 
     function setBaseURI(string calldata _newURI) external onlyAdmin {
