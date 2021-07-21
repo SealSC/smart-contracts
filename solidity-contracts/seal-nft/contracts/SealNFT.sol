@@ -14,6 +14,10 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
     SealNFTPeriphery public sealNFTPeriphery;
 
     event Deployed(address nftContract, address theOwner, string nftName, string nftSymbol);
+    event SequenceNFTMinted(address to, uint256 id);
+    event MetaNFTMinted(address to, bytes32 metahash);
+    event SignedMetaNFTMinted(address to, bytes32 metahash, bytes sig);
+
     constructor(
         address _owner,
         string memory _name,
@@ -42,6 +46,8 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
 
         require(stored, "store failed");
         _mint(_to, uint256(metadataHash));
+
+        emit MetaNFTMinted(_to, metadataHash);
     }
 
     function mintSequentially(address _to) external onlyExecutor {
@@ -49,6 +55,8 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         require(stored, "store failed");
 
         _mint(_to, nextSequenceID);
+
+        emit SequenceNFTMinted(_to, nextSequenceID);
 
         nextSequenceID = nextSequenceID.add(1);
     }
@@ -58,6 +66,8 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
 
         require(stored, "store failed: invalid signature");
         _mint(_to, uint256(_metadataHash));
+
+        emit SignedMetaNFTMinted(_to, _metadataHash, _sig);
     }
 
     function burn(uint256 _id) external {
