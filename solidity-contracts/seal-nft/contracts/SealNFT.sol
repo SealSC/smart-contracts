@@ -9,8 +9,7 @@ import "./SealNFTPeriphery.sol";
 contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeMath for uint256;
 
-    bool public sequentialID;
-    uint256 public nextID;
+    uint256 public nextSequenceID;
 
     SealNFTPeriphery public sealNFTPeriphery;
 
@@ -19,10 +18,8 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         address _owner,
         string memory _name,
         string memory _symbol,
-        address payable _periphery,
-        bool _sequentialID) public Simple3Role(_owner) ERC721(_name, _symbol) {
+        address payable _periphery) public Simple3Role(_owner) ERC721(_name, _symbol) {
         sealNFTPeriphery = SealNFTPeriphery(_periphery);
-        sequentialID = _sequentialID;
 
         emit Deployed(address(this), _owner, _name, _symbol);
     }
@@ -39,32 +36,28 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         }
     }
 
-    function getID(bytes32 _metadataHash) internal returns(uint256 id) {
-        if(sequentialID) {
-            id = nextID;
-            nextID = nextID.add(1);
-        } else {
-            id = uint256(keccak256(abi.encodePacked(_metadataHash)));
-        }
-
-        return id;
-    }
-
     function mintWithoutSig(address _to, string calldata _metadata) external onlyAdmin {
         bytes32 metadataHash = keccak256(abi.encodePacked(_metadata));
-        uint256 id = getID(metadataHash);
-        (, bool stored) = sealNFTPeriphery.store(id);
+        (, bool stored) = sealNFTPeriphery.store(uint256(metadataHash));
 
-        require(stored, "not stored");
-        _mint(_to, id);
+        require(stored, "store failed");
+        _mint(_to, uint256(metadataHash));
+    }
+
+    function mintSequentially(address _to) external onlyExecutor {
+        (, bool stored) = sealNFTPeriphery.store(nextSequenceID);
+        require(stored, "store failed");
+
+        _mint(_to, nextSequenceID);
+
+        nextSequenceID = nextSequenceID.add(1);
     }
 
     function mintWithSig(address _to, bytes32 _metadataHash, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier) external onlyExecutor {
-        uint256 id = getID(_metadataHash);
-        (, bool stored) = sealNFTPeriphery.storeWithVerify(id, _sig, _feeCategory, _feeSupplier);
+        (, bool stored) = sealNFTPeriphery.storeWithVerify(uint256(_metadataHash), _sig, _feeCategory, _feeSupplier);
 
-        require(stored, "invalid signature");
-        _mint(_to, id);
+        require(stored, "store failed: invalid signature");
+        _mint(_to, uint256(_metadataHash));
     }
 
     function burn(uint256 _id) external {
