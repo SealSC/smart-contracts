@@ -6,6 +6,7 @@ import "../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../../contract-libs/open-zeppelin/ECDSA.sol";
 import "./ISealOnchainIdxStore.sol";
 import "../../contract-libs/seal-sc/Cashier.sol";
+import "../../contract-libs/seal-sc/Utils.sol";
 
 contract SealOnchainIdxStore is ISealOnchainIdxStore, Cashier, Simple3Role, SimpleSealSCSignature {
     using SafeMath for uint256;
@@ -50,7 +51,13 @@ contract SealOnchainIdxStore is ISealOnchainIdxStore, Cashier, Simple3Role, Simp
         require(supportedFee[_feeCategory].exists, "not supported fee category");
 
         bytes32 id = getStoreID(msg.sender, _key);
-        address signer = id.recover(_sig);
+
+        bytes32 signedHash = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n67:",
+                SealUtils.toLowerCaseHex(uint256(id))
+            ));
+        address signer = signedHash.recover(_sig);
 
         if(!signers[signer]) {
             return (false, false);
