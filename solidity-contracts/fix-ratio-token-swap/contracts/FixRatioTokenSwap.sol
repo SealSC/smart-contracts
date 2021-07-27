@@ -8,6 +8,28 @@ import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
 interface IFixRatioTokenSwap {
+    struct SwapConfig {
+        IERC20 pricingCurrency;
+        IERC20 swapCurrency;
+
+        uint256 ratio;
+
+        uint256 startTime;
+        uint256 duration;
+
+        uint256 supplyCap;
+
+        uint256 minInAmount;
+        uint256 maxInAmount;
+    }
+
+    struct SwapInfo {
+        uint256 swapIn;
+        uint256 swapOut;
+        bool exists;
+        bool claimed;
+    }
+
     function setConfigure(
         IERC20 _pricingCurrency,
         IERC20 _swapCurrency,
@@ -39,7 +61,7 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
 
     mapping(address=>bool) public whitelist;
 
-    mapping(address=>uint256) swapList;
+    mapping(address=>SwapInfo) swapList;
 
     address[] swapUserList;
 
@@ -67,21 +89,6 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
     event Created(address admin);
     event Confirmed(address admin, uint256 blockNum, uint256 timestamp);
     event Complete(uint256 blockNum);
-
-    struct SwapConfig {
-        IERC20 pricingCurrency;
-        IERC20 swapCurrency;
-
-        uint256 ratio;
-
-        uint256 startTime;
-        uint256 duration;
-
-        uint256 supplyCap;
-
-        uint256 minInAmount;
-        uint256 maxInAmount;
-    }
 
     SwapConfig public config;
 
@@ -142,11 +149,21 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
         whitelist[_user] = true;
     }
 
-    function _recordSwapAmount(uint256 _amount, address _to) internal {
-        if(swapList[_to] == 0) {
+    function _recordSwapInfo(uint256 _amountIn, uint256 _amountOut, address _to) internal {
+        if(!swapList[_to].exists) {
+            swapList[_to] = SwapInfo({
+                swapIn: _amountIn,
+                swapOut: _amountOut,
+                exists: true,
+                claimed: false
+            });
+
             swapUserList.push(_to);
+            return;
         }
-        swapList[_to] = swapList[_to].add(_amount);
+
+        swapList[_to].swapIn = swapList[_to].swapIn.add(_amountIn);
+        swapList[_to].swapOut = swapList[_to].swapOut.add(_amountOut);
     }
 
     function _refund(uint256 _refundAmount, address payable _to) internal {
@@ -191,7 +208,7 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
         }
 
         willSwap = willSwap.add(dAmount);
-        _recordSwapAmount(dAmount, msg.sender);
+        _recordSwapInfo(_inAmount.sub(refundAmount), dAmount, msg.sender);
 
         if(refundAmount > 0) {
             require(refundAmount < _inAmount, "revert for refund");
@@ -200,16 +217,19 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
     }
 
     function claim() ended external {
-        uint256 amount = swapList[msg.sender];
-        require(amount > 0, "no swap for this address");
+        SwapInfo storage si = swapList[msg.sender];
+        require(!si.claimed, "already claimed");
+        require(si.swapOut > 0, "no swap out amount for this address");
+
+        uint256 amount = si.swapOut;
         config.swapCurrency.safeTransfer(msg.sender, amount);
 
         emit Claimed(msg.sender, amount, block.number, block.timestamp);
 
-        swapList[msg.sender] = 0;
+        si.claimed = true;
     }
 
-    function getProgress() external view returns(uint256 progress){
-        return willSwap.mul(RATIO_BASE_POINT).div(config.supplyCap);
+    function getProgress() external view returns(uint256 progress, uint256 userCount){
+        return (willSwap.mul(RATIO_BASE_POINT).div(config.supplyCap), swapUserList.length);
     }
 }
