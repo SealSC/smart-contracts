@@ -10,35 +10,34 @@ import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 interface IFixRatioTokenSwap {
     struct SwapConfig {
         IERC20 pricingCurrency;
-        IERC20 swapCurrency;
+        IERC20 swapOutCurrency;
 
-        uint256 ratio;
+        uint256 sharePrice;
 
         uint256 startTime;
         uint256 duration;
 
-        uint256 supplyCap;
+        uint256 totalShares;
 
-        uint256 minInAmount;
-        uint256 maxInAmount;
+        uint256 amountPerShare;
+        uint256 maxShares;
     }
 
-    struct SwapInfo {
-        uint256 swapIn;
-        uint256 swapOut;
+    struct ShareInfo {
+        uint256 count;
         bool exists;
         bool claimed;
     }
 
     function setConfigure(
         IERC20 _pricingCurrency,
-        IERC20 _swapCurrency,
-        uint256 _ratio,
+        IERC20 _swapOutCurrency,
+        uint256 _sharePrice,
         uint256 _startTime,
         uint256 _duration,
-        uint256 _supplyCap,
-        uint256 _minInAmount,
-        uint256 _maxInAmount
+        uint256 _totalShares,
+        uint256 _amountPerShare,
+        uint256 _maxShares
     ) external;
 
     function setProjectAddress(address _projectAdmin) external;
@@ -57,11 +56,11 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
     bool public isPrivate = false;
     bool public complete = false;
 
-    uint256 public willSwap;
+    uint256 public willSwappedShares;
 
     mapping(address=>bool) public whitelist;
 
-    mapping(address=>SwapInfo) swapList;
+    mapping(address=>ShareInfo) public shareList;
 
     address[] swapUserList;
 
@@ -108,28 +107,28 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
 
     function setConfigure(
         IERC20 _pricingCurrency,
-        IERC20 _swapCurrency,
-        uint256 _ratio,
+        IERC20 _swapOutCurrency,
+        uint256 _sharePrice,
         uint256 _startTime,
         uint256 _duration,
-        uint256 _supplyCap,
-        uint256 _minInAmount,
-        uint256 _maxInAmount
+        uint256 _totalShares,
+        uint256 _amountPerShare,
+        uint256 _maxShares
     ) override external onlyAdmin {
         require(!confirmed, "can not set config to a confirmed swap");
-        require(address (_swapCurrency) != address (0), "swap token is address 0");
+        require(address (_swapOutCurrency) != address (0), "swap token is address 0");
         require(_startTime.add(_duration) > block.timestamp, "already end, check the configs related to time");
-        require(_ratio != 0, "ratio is 0");
+        require(_sharePrice != 0, "ratio is 0");
 
         config = SwapConfig({
             pricingCurrency: _pricingCurrency,
-            swapCurrency: _swapCurrency,
-            ratio: _ratio,
+            swapOutCurrency: _swapOutCurrency,
+            sharePrice: _sharePrice,
             startTime: _startTime,
             duration: _duration,
-            supplyCap: _supplyCap,
-            minInAmount: _minInAmount,
-            maxInAmount: _maxInAmount
+            totalShares: _totalShares,
+            amountPerShare: _amountPerShare,
+            maxShares: _maxShares
         });
 
         emit Created(projectAdmin);
@@ -139,7 +138,7 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
         if(confirmed) {
             return;
         }
-        config.swapCurrency.safeTransferFrom(msg.sender, address(this), config.supplyCap);
+        config.swapOutCurrency.safeTransferFrom(msg.sender, address(this), config.totalShares.mul(config.amountPerShare));
         confirmed = true;
 
         emit Confirmed(projectAdmin, block.number, block.timestamp);
@@ -149,11 +148,10 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
         whitelist[_user] = true;
     }
 
-    function _recordSwapInfo(uint256 _amountIn, uint256 _amountOut, address _to) internal {
-        if(!swapList[_to].exists) {
-            swapList[_to] = SwapInfo({
-                swapIn: _amountIn,
-                swapOut: _amountOut,
+    function _recordSharesInfo(uint256 _shares, address _to) internal {
+        if(!shareList[_to].exists) {
+            shareList[_to] = ShareInfo({
+                count: _shares,
                 exists: true,
                 claimed: false
             });
@@ -162,8 +160,7 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
             return;
         }
 
-        swapList[_to].swapIn = swapList[_to].swapIn.add(_amountIn);
-        swapList[_to].swapOut = swapList[_to].swapOut.add(_amountOut);
+        shareList[_to].count = shareList[_to].count.add(_shares);
     }
 
     function _refund(uint256 _refundAmount, address payable _to) internal {
@@ -174,62 +171,56 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
         }
     }
 
-    function purchase(uint256 _inAmount) running payable external {
-        require(willSwap < config.supplyCap, "supply cap touched");
+    function purchase(uint256 _shares) running payable external {
+        require(willSwappedShares < config.totalShares, "supply cap touched");
 
         if(isPrivate) {
             require(whitelist[msg.sender], "private project only for users in whitelist");
         }
 
+        uint256 inAmount = _shares.mul(config.sharePrice);
         if(address(config.pricingCurrency) != address(0)) {
-            config.pricingCurrency.safeTransferFrom(msg.sender, address(this), _inAmount);
+            config.pricingCurrency.safeTransferFrom(msg.sender, address(this), inAmount);
         } else {
-            _inAmount = msg.value;
+            require(inAmount == msg.value, "value not equal needs");
         }
 
-        require(_inAmount >= config.minInAmount, "purchase amount is too small");
-
-        if(config.maxInAmount > 0) {
-            require(_inAmount <= config.maxInAmount, "purchase amount is too big");
+        if(config.maxShares > 0) {
+            require(_shares.add(shareList[msg.sender].count) <= config.maxShares, "purchase amount is too big");
         }
 
-        uint256 dAmount = _inAmount.mul(config.ratio).div(RATIO_BASE_POINT);
-        require(dAmount > 0, "swap amount too small");
-
-        uint256 refundAmount = 0;
-        if(willSwap.add(dAmount) > config.supplyCap) {
-            uint256 exceedAmount = willSwap.add(dAmount).sub(config.supplyCap);
-
-            dAmount = config.supplyCap.sub(willSwap);
-            complete = true;
-            refundAmount = exceedAmount.mul(RATIO_BASE_POINT).div(config.ratio);
-
-            emit Complete(block.number);
-        }
-
-        willSwap = willSwap.add(dAmount);
-        _recordSwapInfo(_inAmount.sub(refundAmount), dAmount, msg.sender);
-
-        if(refundAmount > 0) {
-            require(refundAmount < _inAmount, "revert for refund");
-            _refund(refundAmount, msg.sender);
-        }
+        willSwappedShares = willSwappedShares.add(_shares);
+        _recordSharesInfo(_shares, msg.sender);
     }
 
     function claim() ended external {
-        SwapInfo storage si = swapList[msg.sender];
+        ShareInfo storage si = shareList[msg.sender];
         require(!si.claimed, "already claimed");
-        require(si.swapOut > 0, "no swap out amount for this address");
+        require(si.count > 0, "no swap out amount for this address");
 
-        uint256 amount = si.swapOut;
-        config.swapCurrency.safeTransfer(msg.sender, amount);
+        uint256 amount = si.count.mul(config.amountPerShare);
+        config.swapOutCurrency.safeTransfer(msg.sender, amount);
 
         emit Claimed(msg.sender, amount, block.number, block.timestamp);
 
         si.claimed = true;
     }
 
-    function getProgress() external view returns(uint256 progress, uint256 userCount){
-        return (willSwap.mul(RATIO_BASE_POINT).div(config.supplyCap), swapUserList.length);
+    function getProgress() external view
+        returns (
+            uint256 progress,
+            uint256 totalSwapOut,
+            uint256 supplyCap,
+            uint256 endTime,
+            bool soldOut,
+            uint256 userCount) {
+        return (
+            willSwappedShares.mul(RATIO_BASE_POINT).div(config.totalShares),
+            willSwappedShares,
+            config.totalShares,
+            config.startTime.add(config.duration),
+            complete,
+            swapUserList.length
+        );
     }
 }

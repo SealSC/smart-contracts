@@ -19,10 +19,10 @@ contract FixRatioTokenSwapFactory is Simple3Role, RejectDirectETH {
 
     mapping (bytes32=>SwapPreset) public acceptedSwap;
 
-    event SwapAccepted(address swapCurrenty, address pricingCurrency, address projectAdmin);
+    event SwapAccepted(address _swapOutCurrency, address pricingCurrency, address projectAdmin);
 
-    function _calcSwapContractKey(address _pricingCurrency, address _swapCurrency) pure internal returns(bytes32 key){
-        key = keccak256(abi.encodePacked(_pricingCurrency, _swapCurrency));
+    function _calcSwapContractKey(address _pricingCurrency, address _swapOutCurrency) pure internal returns(bytes32 key){
+        key = keccak256(abi.encodePacked(_pricingCurrency, _swapOutCurrency));
         return key;
     }
 
@@ -31,9 +31,9 @@ contract FixRatioTokenSwapFactory is Simple3Role, RejectDirectETH {
         address _contractAdmin,
         bool _isPrivate,
         address _pricingCurrency,
-        address _swapCurrency
+        address _swapOutCurrency
     ) external onlyAdmin {
-        bytes32 key = _calcSwapContractKey(_pricingCurrency, _swapCurrency);
+        bytes32 key = _calcSwapContractKey(_pricingCurrency, _swapOutCurrency);
         acceptedSwap[key] = SwapPreset({
             projectAdmin: _projectAdmin,
             contractAdmin: _contractAdmin,
@@ -41,21 +41,21 @@ contract FixRatioTokenSwapFactory is Simple3Role, RejectDirectETH {
             accepted: true
         });
 
-        emit SwapAccepted(_swapCurrency, _pricingCurrency, _projectAdmin);
+        emit SwapAccepted(_swapOutCurrency, _pricingCurrency, _projectAdmin);
     }
 
     function createSwap(
         IERC20 _pricingCurrency,
-        IERC20 _swapCurrency,
-        uint256 _ratio,
+        IERC20 _swapOutCurrency,
+        uint256 _sharePrice,
         uint256 _startTime,
         uint256 _duration,
-        uint256 _supplyCap,
-        uint256 _minInAmount,
-        uint256 _maxInAmount
+        uint256 _totalShares,
+        uint256 _amountPerShare,
+        uint256 _maxShares
     ) external onlyExecutor returns(address swap) {
         bytes memory bytecode = type(FixRatioTokenSwap).creationCode;
-        bytes32 key = _calcSwapContractKey(address(_pricingCurrency), address(_swapCurrency));
+        bytes32 key = _calcSwapContractKey(address(_pricingCurrency), address(_swapOutCurrency));
         require(!listedSwap[key], "listed already");
 
         SwapPreset memory preset = acceptedSwap[key];
@@ -69,13 +69,13 @@ contract FixRatioTokenSwapFactory is Simple3Role, RejectDirectETH {
 
         IFixRatioTokenSwap(swap).setConfigure(
             _pricingCurrency,
-            _swapCurrency,
-            _ratio,
+            _swapOutCurrency,
+            _sharePrice,
             _startTime,
             _duration,
-            _supplyCap,
-            _minInAmount,
-            _maxInAmount
+            _totalShares,
+            _amountPerShare,
+            _maxShares
         );
 
         IFixRatioTokenSwap(swap).setProjectAddress(preset.projectAdmin);
