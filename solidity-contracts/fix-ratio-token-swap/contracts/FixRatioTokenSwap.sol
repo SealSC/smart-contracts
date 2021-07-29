@@ -209,8 +209,8 @@ contract FixRatioTokenSwap is IFixRatioTokenSwap, Simple3Role, Mutex, SimpleSeal
     function getProgress() external view
         returns (
             uint256 progress,
-            uint256 totalSwapOut,
-            uint256 supplyCap,
+            uint256 swappedShares,
+            uint256 totalShares,
             uint256 endTime,
             bool soldOut,
             uint256 userCount) {
