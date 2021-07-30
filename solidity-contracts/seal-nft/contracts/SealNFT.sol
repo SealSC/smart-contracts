@@ -40,14 +40,13 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         }
     }
 
-    function mintWithoutSig(address _to, string calldata _metadata) external onlyAdmin {
-        bytes32 metadataHash = keccak256(abi.encodePacked(_metadata));
-        (, bool stored) = sealNFTPeriphery.store(uint256(metadataHash));
+    function mintWithoutSig(address _to, bytes32 _metadataHash) external onlyAdmin {
+        (, bool stored) = sealNFTPeriphery.store(uint256(_metadataHash));
 
         require(stored, "store failed");
-        _mint(_to, uint256(metadataHash));
+        _mint(_to, uint256(_metadataHash));
 
-        emit MetaNFTMinted(_to, metadataHash);
+        emit MetaNFTMinted(_to, _metadataHash);
     }
 
     function mintSequentially(address _to) external onlyExecutor {
