@@ -40,7 +40,7 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         }
     }
 
-    function mintWithoutSig(address _to, bytes32 _metadataHash) external onlyAdmin {
+    function mintHashed(address _to, bytes32 _metadataHash) external onlyAdmin {
         (, bool stored) = sealNFTPeriphery.store(uint256(_metadataHash));
 
         require(stored, "store failed");
@@ -60,7 +60,7 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         nextSequenceID = nextSequenceID.add(1);
     }
 
-    function mintWithSig(address _to, bytes32 _metadataHash, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier) external onlyExecutor {
+    function mintSigned(address _to, bytes32 _metadataHash, bytes calldata _sig, uint256 _feeCategory, address _feeSupplier) external onlyExecutor {
         (, bool stored) = sealNFTPeriphery.storeWithVerify(uint256(_metadataHash), _sig, _feeCategory, _feeSupplier);
 
         require(stored, "store failed: invalid signature");
