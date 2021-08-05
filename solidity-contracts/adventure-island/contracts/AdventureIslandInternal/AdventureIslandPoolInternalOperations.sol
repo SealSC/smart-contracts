@@ -5,7 +5,6 @@ pragma solidity ^0.6.0;
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../AdventureIslandData/AdventureIslandData.sol";
 import "./AdventureIslandStakingOperations.sol";
-//import "../AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
 contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperations {
     using SafeMath for uint256;
