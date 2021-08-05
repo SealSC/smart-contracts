@@ -29,7 +29,7 @@ abstract contract AdventureIslandPoolManager is AdventureIslandTeamManager, Adve
             require(start >= block.number, "start must after or on the tx block");
         }
 
-        require(_startBlock >= globalStartBlock, "must after or at pools start block");
+        require(start >= globalStartBlock, "must after or at pools start block");
 
         if(_endBlock > 0) {
             require(_endBlock > _startBlock);
