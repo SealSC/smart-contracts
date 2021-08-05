@@ -5,8 +5,15 @@ pragma solidity ^0.6.0;
 import "./AdventureIslandInternal/AdventureIslandInternal.sol";
 
 contract AdventureIslandViews is AdventureIslandInternal {
-    function poolsCount() external view returns(uint256) {
-        return validPoolList.length;
+    function poolsCount() external view returns(uint256 counts) {
+        counts = 0;
+        for(uint256 i=0; i<allPoolsCount; i++) {
+            if(!validPoolList[i]) {
+                continue;
+            }
+            counts = counts + 1;
+        }
+        return counts;
     }
 
     function poolsEnabled() external view returns(bool enabled) {
