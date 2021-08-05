@@ -50,7 +50,7 @@ contract AdventureIsland is Ownable, Mutex, AdventureIslandAdmin, AdventureIslan
         _staking(_pid, user, _amount, false);
     }
 
-    function staking(uint256 _pid, uint256 _amount) external noReentrancy {
+    function stake(uint256 _pid, uint256 _amount) external noReentrancy {
         require(!msg.sender.isContract(), "this interface only for EOA call");
         UserInfo storage user = users[_pid][msg.sender];
         _staking(_pid, user, _amount, false);
