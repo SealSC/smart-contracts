@@ -69,11 +69,6 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         emit SignedMetaNFTMinted(_to, _metadataHash, _sig);
     }
 
-    function burn(uint256 _id) external {
-        require(ownerOf(_id) == msg.sender, "not token owner");
-        _burn(_id);
-    }
-
     function getSealNFTURI(uint256 _id) external view returns(string memory sealURI) {
         if(ownerOf(_id) == address(0)) {
             return "";
