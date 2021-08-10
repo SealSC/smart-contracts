@@ -58,14 +58,17 @@ contract ERC20Faucet is ERC20TransferOut, Simple3Role, RejectDirectETH, SimpleSe
     }
 
     function claim(address _receiver) external {
-        require(latestClaim[msg.sender].add(settings.interval) < block.timestamp, "too greed");
+        require(validUser(msg.sender), "too greed of sender");
+        require(validUser(_receiver), "too greed of receiver");
+
         for(uint256 i=0; i<settings.token.length; i++) {
             settings.token[i].safeTransfer(_receiver, settings.amount[i]);
         }
         latestClaim[msg.sender] = (settings.interval);
+        latestClaim[_receiver] = (settings.interval);
     }
 
-    function validUser(address _user) external view returns(bool valid) {
+    function validUser(address _user) public view returns(bool valid) {
         return (latestClaim[_user].add(settings.interval) < block.timestamp);
     }
 }
