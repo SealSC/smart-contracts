@@ -64,8 +64,8 @@ contract ERC20Faucet is ERC20TransferOut, Simple3Role, RejectDirectETH, SimpleSe
         for(uint256 i=0; i<settings.token.length; i++) {
             settings.token[i].safeTransfer(_receiver, settings.amount[i]);
         }
-        latestClaim[msg.sender] = (settings.interval);
-        latestClaim[_receiver] = (settings.interval);
+        latestClaim[msg.sender] = block.timestamp;
+        latestClaim[_receiver] = block.timestamp;
     }
 
     function validUser(address _user) public view returns(bool valid) {
