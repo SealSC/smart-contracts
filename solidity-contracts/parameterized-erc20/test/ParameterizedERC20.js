@@ -13,17 +13,17 @@ let noneMinalbeToken = null
 
 contract("ParameterizedERC20", async accounts => {
   before('deploy the contract', async () => {
-    testToken = await ParameterizedERC20.new(accounts[0], tokenName, tokenSymbol, testDecimals, mintEnabled, initSupply)
+    testToken = await ParameterizedERC20.new(accounts[0], tokenName, tokenSymbol, testDecimals, initSupply, mintEnabled, true)
       .catch(_=>{
         return null
       })
 
-    noneMinalbeToken = await ParameterizedERC20.new(accounts[0], tokenName, tokenSymbol, testDecimals, false, initSupply)
+    noneMinalbeToken = await ParameterizedERC20.new(accounts[0], tokenName, tokenSymbol, testDecimals, initSupply, false, true)
     assert.isNotNull(testToken, `deploy failed: ${testToken}`);
   });
 
   it(`test issue to address zero should be failed`, async ()=>{
-    let nullToken = await ParameterizedERC20.new('0x0000000000000000000000000000000000000000', tokenName, tokenSymbol, testDecimals, mintEnabled, initSupply)
+    let nullToken = await ParameterizedERC20.new('0x0000000000000000000000000000000000000000', tokenName, tokenSymbol, testDecimals, initSupply, mintEnabled, true)
       .catch(_=>{
         return null
       })

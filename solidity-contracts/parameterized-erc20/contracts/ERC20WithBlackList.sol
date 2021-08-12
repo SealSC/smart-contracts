@@ -6,11 +6,15 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 abstract contract ERC20WithBlackList is ERC20, Simple3Role {
     mapping(address=>bool) public blackList;
 
+    bool public blackListEnabled = false;
+
     function addToBlackList(address _user) external onlyAdmin {
+        require(blackListEnabled, "blacklist is not enabled");
         blackList[_user] = true;
     }
 
     function removeFromBlackList(address _user) external onlyAdmin {
+        require(blackListEnabled, "blacklist is not enabled");
         blackList[_user] = false;
     }
 

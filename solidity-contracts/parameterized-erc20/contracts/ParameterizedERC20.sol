@@ -13,11 +13,13 @@ contract ParameterizedERC20 is ERC20WithBlackList, ERC20Minable, SimpleSealSCSig
         string memory _name,
         string memory _symbol,
         uint8 _decimals,
+        uint256 _initSupply,
         bool _minable,
-        uint256 _initSupply)
+        bool _enableBlackList)
     public ERC20(_name, _symbol, _decimals) Simple3Role(_owner){
         require(_owner != ZERO_ADDRESS);
         minable = _minable;
+        blackListEnabled = _enableBlackList;
         _mint(_owner, _initSupply);
     }
 
