@@ -269,6 +269,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
         returns (
             uint256 progress,
             uint256 total,
+            uint256 totalSupply,
             uint256 price,
             uint256 qualificationRatio,
             uint256 endTime,
@@ -276,6 +277,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
         return (
             totalInvested.mul(RATIO_BASE_POINT).div(config.investCap),
             totalInvested,
+            config.totalSupply,
             config.price,
             config.qualificationRatio,
             config.startTime.add(config.duration),
