@@ -7,6 +7,7 @@ import "../../contract-libs/seal-sc/Utils.sol";
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../../contract-libs/open-zeppelin/ERC721/IERC721.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
+import "../../contract-libs/seal-sc/Constants.sol";
 
 interface IERC20DistributionInShares {
     struct DistributionConfig {
@@ -38,15 +39,15 @@ interface IERC20DistributionInShares {
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration
+        uint256 _duration,
+        bool _isPrivate
     ) external;
 
     function setProjectAdmin(address _projectAdmin) external;
-    function setContractAdmin(address _admin) external;
     function switchToPrivate() external;
 }
 
-contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, Mutex, SimpleSealSCSignature, RejectDirectETH {
+contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Simple3Role, Mutex, SimpleSealSCSignature, RejectDirectETH {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address payable;
@@ -89,10 +90,11 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
     }
 
     event Claimed(address user, uint256 amount, uint256 blockNum, uint256 timestamp);
-    event Created(address admin);
+    event Configured(address byAdmin, bool isPrivate);
     event Confirmed(address admin, uint256 blockNum, uint256 timestamp);
     event Complete(uint256 blockNum);
     event UserAccelerated(address user);
+    event PeripherySet(address projectAdmin, address accItem);
 
     DistributionConfig public config;
 
@@ -102,16 +104,19 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
         accelerationItem = _item;
     }
 
-    function setProjectAdmin(address _projectAdmin) override external onlyOwner {
+    function setProjectAdmin(address _projectAdmin) override external onlyAdmin {
         projectAdmin = _projectAdmin;
     }
 
-    function setContractAdmin(address _admin) override external onlyOwner {
-        addAdministrator(_admin);
+    function switchToPrivate() override external onlyAdmin {
+        isPrivate = true;
     }
 
-    function switchToPrivate() override external onlyOwner {
-        isPrivate = true;
+    function setPeriphery(address _projectAdmin, address _accItem) external {
+        projectAdmin = _projectAdmin;
+        accelerationItem = IERC721(_accItem);
+
+        emit PeripherySet(_projectAdmin, _accItem);
     }
 
     function setConfigure(
@@ -122,7 +127,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration
+        uint256 _duration,
+        bool _isPrivate
     ) override external onlyAdmin {
         require(!confirmed, "can not set config to a confirmed swap");
         require(address (_swapOutCurrency) != address (0), "swap token is address 0");
@@ -141,7 +147,9 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
             investCap: _totalSupply.mul(_price).div(10 ** uint256(_swapOutCurrency.decimals()))
         });
 
-        emit Created(projectAdmin);
+        isPrivate = _isPrivate;
+
+        emit Configured(projectAdmin, isPrivate);
     }
 
     function confirm() external onlyProjectAdmin {
@@ -180,7 +188,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
     }
 
     function _refund(uint256 _refundAmount, address payable _to) internal {
-        if(address (config.pricingCurrency) == address(0)) {
+        if(address (config.pricingCurrency) == ZERO_ADDRESS) {
             _to.sendValue(_refundAmount);
         } else {
             config.pricingCurrency.safeTransfer(_to, _refundAmount);
@@ -192,12 +200,12 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
             require(whitelist[msg.sender], "private project only for users in whitelist");
         }
 
-        if(address(config.pricingCurrency) != address(0)) {
+        if(address(config.pricingCurrency) != ZERO_ADDRESS) {
             config.pricingCurrency.safeTransferFrom(msg.sender, address(this), _amount);
         }
 
-        if(address(config.qualificationCurrency) != address(0)) {
-            config.qualificationCurrency.safeTransferFrom(msg.sender, address(0), _amount.mul(config.qualificationRatio).div(RATIO_BASE_POINT));
+        if(address(config.qualificationCurrency) != ZERO_ADDRESS) {
+            config.qualificationCurrency.safeTransferFrom(msg.sender, DUMMY_ADDRESS, _amount.mul(config.qualificationRatio).div(RATIO_BASE_POINT));
         }
 
         _recordInvestInfo(_amount, msg.sender);
@@ -224,7 +232,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Simple3Role, M
         }
 
         acceleratedUser[user] = true;
-        accelerationItem.safeTransferFrom(msg.sender, address(0), _itemID);
+        accelerationItem.safeTransferFrom(msg.sender, DUMMY_ADDRESS, _itemID);
 
         totalInvested = totalInvested.add(shareList[user].amount);
         shareList[user].amount =  shareList[user].amount.mul(2);
