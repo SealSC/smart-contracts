@@ -39,12 +39,12 @@ interface IERC20DistributionInShares {
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration,
-        bool _isPrivate
+        uint256 _duration
     ) external;
 
     function setProjectAdmin(address _projectAdmin) external;
     function switchToPrivate() external;
+    function setPeriphery(address _projectAdmin, address _accItem) external;
 }
 
 contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Simple3Role, Mutex, SimpleSealSCSignature, RejectDirectETH {
@@ -60,6 +60,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     bool public confirmed = false;
     bool public isPrivate = false;
     bool public complete = false;
+    bool public investWasSent = false;
 
     uint256 public totalInvested;
 
@@ -90,17 +91,18 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     }
 
     event Claimed(address user, uint256 amount, uint256 blockNum, uint256 timestamp);
-    event Configured(address byAdmin, bool isPrivate);
+    event Configured(address byAdmin);
     event Confirmed(address admin, uint256 blockNum, uint256 timestamp);
     event Complete(uint256 blockNum);
     event UserAccelerated(address user);
     event PeripherySet(address projectAdmin, address accItem);
+    event InvestWasSent(address reciever, uint256 amount);
 
     DistributionConfig public config;
 
     constructor() public Simple3Role(msg.sender) {}
 
-    function setAccelerationItem(IERC721 _item) external onlyAdmin{
+    function setAccelerationItem(IERC721 _item) external onlyAdmin {
         accelerationItem = _item;
     }
 
@@ -112,11 +114,42 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
         isPrivate = true;
     }
 
-    function setPeriphery(address _projectAdmin, address _accItem) external {
+    function setPeriphery(address _projectAdmin, address _accItem) override external onlyAdmin {
         projectAdmin = _projectAdmin;
         accelerationItem = IERC721(_accItem);
 
         emit PeripherySet(_projectAdmin, _accItem);
+    }
+
+    function getInvest(address _to) external ended onlyAdmin {
+        require(_to != ZERO_ADDRESS, "transfer to zero address denied");
+        require(!investWasSent, "already sent the invest");
+
+        uint256 investedAmount = totalInvested;
+        if(totalInvested > config.investCap) {
+            investedAmount = config.investCap;
+        }
+
+        config.pricingCurrency.safeTransfer(_to, investedAmount);
+        investWasSent = true;
+
+        emit InvestWasSent(_to, investedAmount);
+    }
+
+    function emergencyWithdrawERC20(address _token, address _to) external onlyOwner {
+        if(_to == ZERO_ADDRESS) {
+            _to = owner();
+        }
+
+        IERC20(_token).safeTransfer(_to, IERC20(_token).balanceOf(address(this)));
+    }
+
+    function emergencyWithdrawETH(address payable _to) external onlyOwner {
+        if(_to == ZERO_ADDRESS) {
+            _to = msg.sender;
+        }
+
+        _to.sendValue(address(this).balance);
     }
 
     function setConfigure(
@@ -127,8 +160,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration,
-        bool _isPrivate
+        uint256 _duration
     ) override external onlyAdmin {
         require(!confirmed, "can not set config to a confirmed swap");
         require(address (_swapOutCurrency) != address (0), "swap token is address 0");
@@ -147,9 +179,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
             investCap: _totalSupply.mul(_price).div(10 ** uint256(_swapOutCurrency.decimals()))
         });
 
-        isPrivate = _isPrivate;
-
-        emit Configured(projectAdmin, isPrivate);
+        emit Configured(projectAdmin);
     }
 
     function confirm() external onlyProjectAdmin {
