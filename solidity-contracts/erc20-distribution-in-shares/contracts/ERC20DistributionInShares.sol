@@ -42,7 +42,6 @@ interface IERC20DistributionInShares {
         uint256 _duration
     ) external;
 
-    function setProjectAdmin(address _projectAdmin) external;
     function switchToPrivate() external;
     function setPeriphery(address _projectAdmin, address _accItem) external;
 }
@@ -101,14 +100,6 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     DistributionConfig public config;
 
     constructor() public Simple3Role(msg.sender) {}
-
-    function setAccelerationItem(IERC721 _item) external onlyAdmin {
-        accelerationItem = _item;
-    }
-
-    function setProjectAdmin(address _projectAdmin) override external onlyAdmin {
-        projectAdmin = _projectAdmin;
-    }
 
     function switchToPrivate() override external onlyAdmin {
         isPrivate = true;
@@ -311,7 +302,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
             uint256 price,
             uint256 qualificationRatio,
             uint256 endTime,
-            uint256 userCount) {
+            uint256 userCount,
+            bool isRunning) {
         return (
             totalInvested.mul(RATIO_BASE_POINT).div(config.investCap),
             totalInvested,
@@ -319,7 +311,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
             config.price,
             config.qualificationRatio,
             config.startTime.add(config.duration),
-            swapUserList.length
+            swapUserList.length,
+            confirmed && config.startTime <= block.timestamp
         );
     }
 }
