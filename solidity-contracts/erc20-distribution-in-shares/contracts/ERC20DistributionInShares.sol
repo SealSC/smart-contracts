@@ -70,7 +70,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     address[] public swapUserList;
 
     modifier onlyProjectAdmin() {
-        require(msg.sender == projectAdmin, "not administrator of this project");
+        require(msg.sender == projectAdmin, "not admin");
         _;
     }
 
@@ -113,8 +113,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     }
 
     function getInvest(address _to) external ended onlyAdmin {
-        require(_to != ZERO_ADDRESS, "transfer to zero address denied");
-        require(!investWasSent, "already sent the invest");
+        require(_to != ZERO_ADDRESS, "receiver is zero");
+        require(!investWasSent, "already sent");
 
         uint256 investedAmount = totalInvested;
         if(totalInvested > config.investCap) {
@@ -153,9 +153,9 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
         uint256 _startTime,
         uint256 _duration
     ) override external onlyAdmin {
-        require(!confirmed, "can not set config to a confirmed swap");
-        require(address (_swapOutCurrency) != address (0), "swap token is address 0");
-        require(_startTime.add(_duration) > block.timestamp, "already end, check the configs related to time");
+        require(!confirmed, "already confirmed");
+        require(address (_swapOutCurrency) != address (0), "invalid out token");
+        require(_startTime.add(_duration) > block.timestamp, "already ended");
         require(_price != 0, "ratio is 0");
 
         config = DistributionConfig({
@@ -177,6 +177,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
         if(confirmed) {
             return;
         }
+        require(config.startTime > block.timestamp, "already started");
         config.swapOutCurrency.safeTransferFrom(msg.sender, address(this), config.totalSupply);
         confirmed = true;
 
@@ -218,7 +219,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
 
     function purchase(uint256 _amount) running payable external {
         if(isPrivate) {
-            require(whitelist[msg.sender], "private project only for users in whitelist");
+            require(whitelist[msg.sender], "not in whitelist");
         }
 
         if(address(config.pricingCurrency) != ZERO_ADDRESS) {
@@ -235,7 +236,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     function claim() ended external {
         InvestInfo storage si = shareList[msg.sender];
         require(!si.claimed, "already claimed");
-        require(si.amount > 0, "no swap out amount for this address");
+        require(si.amount > 0, "out amount is 0");
 
         (uint256 amount, uint256 refund) = calcSharesOf(msg.sender);
         config.swapOutCurrency.safeTransfer(msg.sender, amount);
