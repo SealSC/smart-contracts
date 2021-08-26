@@ -18,12 +18,13 @@ contract ERC20TimeLock is Ownable {
    mapping (address=>userLockedInfo[]) public lockList;
    mapping (address=>bool) public supportedToken;
 
-   event AddLockedInfo(address indexed user, address indexed token, uint256 amount, uint256 unlockedTime, uint256 idx);
-   event IncreaseLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
-   event ReduceLockedAmount(address indexed user,  address indexed token, uint256 idx,uint256 amount);
-   event SetNewUnlockedTime(address indexed user,  uint256 idx, uint256 unlockedTime);
-   event RemoveLockedInfo(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
-   event Withdrawn(address indexed user, address indexed token, uint256 indexed idx, uint256 amount);
+   event SimpleLocked(address user, address token, uint256 amount, uint256 unlockedTime, uint256 idx);
+   event LinearReleaseLocked(address user, address token, uint256 eachRelease, uint256 stageCount, uint256 startTime, uint256 interval, uint256 idx);
+   event IncreaseLockedAmount(address user, address token, uint256 idx,uint256 amount);
+   event ReduceLockedAmount(address user,  address token, uint256 idx,uint256 amount);
+   event SetNewUnlockedTime(address user,  uint256 idx, uint256 unlockedTime);
+   event RemoveLockedInfo(address user, address token, uint256 idx, uint256 amount);
+   event Withdrawn(address user, address token, uint256 idx, uint256 amount);
    event SupportedTokenAdded(address token);
    event SupportedTokenRemoved(address token);
 
@@ -39,21 +40,50 @@ contract ERC20TimeLock is Ownable {
       uli.amount = 0;
    }
 
-   function lock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) external {
-      require(supportedToken[_token], "not supported token");
-
-      IERC20 token = IERC20(_token);
-
-      token.safeTransferFrom(msg.sender, address(this), _amount);
+   function _lock(address _forUser, uint256 _amount, uint256 _unlockedTime, IERC20 _token) internal returns(uint256 idx) {
       userLockedInfo[] storage uList = lockList[_forUser];
-      emit AddLockedInfo(_forUser, _token, _amount, _unlockedTime, uList.length);
 
       uList.push(userLockedInfo({
          amount: _amount,
          unlockedTime: _unlockedTime,
-         token: token,
+         token: _token,
          withdrawn: false
       }));
+
+      return uList.length;
+   }
+
+   function simpleLock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) external {
+      require(supportedToken[_token], "not supported token");
+
+      IERC20 token = IERC20(_token);
+      token.safeTransferFrom(msg.sender, address(this), _amount);
+      uint256 idx = _lock(_forUser, _amount, _unlockedTime, token);
+
+      emit SimpleLocked(_forUser, _token, _amount, _unlockedTime, idx);
+   }
+
+   function linearReleaseLock(
+      address _forUser,
+      uint256 _eachRelease,
+      uint256 _stageCount,
+      uint256 _startTime,
+      uint256 _interval,
+      address _token) external {
+      require(supportedToken[_token], "not supported token");
+
+      uint256 totalAmount = _eachRelease.mul(_stageCount);
+      IERC20 token = IERC20(_token);
+      token.safeTransferFrom(msg.sender, address(this), totalAmount);
+
+      uint256 unlockTime = _startTime;
+      uint256 idx = 0;
+      for(uint256 i=0; i<_stageCount; i++) {
+         unlockTime = unlockTime.add(_interval);
+         idx = _lock(_forUser, _eachRelease, unlockTime, token);
+      }
+
+      emit LinearReleaseLocked(_forUser, _token, _eachRelease, _stageCount, _startTime, _interval, idx);
    }
 
    function addSupportedToken(address _token) external onlyOwner {
