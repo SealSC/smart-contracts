@@ -28,7 +28,6 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     event UpdateMinterQuota(address minter, uint256 quota, uint256 block);
     event MinterRemoved(address minter, uint256 block);
     event MintTo(address minter, address to, uint256 amount);
-    event FormulaChanged(address indexed from, address indexed to, address indexed byAdmin);
 
     mapping(address=>MinterInfo) public minters;
 
