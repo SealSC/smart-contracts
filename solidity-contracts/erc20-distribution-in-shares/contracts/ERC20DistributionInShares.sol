@@ -23,6 +23,7 @@ interface IERC20DistributionInShares {
         uint256 duration;
 
         uint256 investCap;
+        uint256 minInvest;
     }
 
     struct InvestInfo {
@@ -39,7 +40,8 @@ interface IERC20DistributionInShares {
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration
+        uint256 _duration,
+        uint256 _minInvest
     ) external;
 
     function switchToPrivate() external;
@@ -151,7 +153,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
         uint256 _qualificationRatio,
         uint256 _totalSupply,
         uint256 _startTime,
-        uint256 _duration
+        uint256 _duration,
+        uint256 _minInvest
     ) override external onlyAdmin {
         require(!confirmed, "already confirmed");
         require(address (_swapOutCurrency) != address (0), "invalid out token");
@@ -167,7 +170,8 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
             totalSupply: _totalSupply,
             startTime: _startTime,
             duration: _duration,
-            investCap: _totalSupply.mul(_price).div(10 ** uint256(_swapOutCurrency.decimals()))
+            investCap: _totalSupply.mul(_price).div(10 ** uint256(_swapOutCurrency.decimals())),
+            minInvest: _minInvest
         });
 
         emit Configured(projectAdmin);
@@ -218,6 +222,7 @@ contract ERC20DistributionInShares is IERC20DistributionInShares, Constants, Sim
     }
 
     function purchase(uint256 _amount) running payable external {
+        require(_amount > config.minInvest, "purchase too small");
         if(isPrivate) {
             require(whitelist[msg.sender], "not in whitelist");
         }
