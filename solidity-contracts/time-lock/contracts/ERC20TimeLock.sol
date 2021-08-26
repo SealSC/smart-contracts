@@ -8,8 +8,6 @@ contract ERC20TimeLock is Ownable {
    using SafeERC20 for IERC20;
    using SafeMath for uint256;
 
-   uint256 public minLockedTime = 365 * 24 * 3600;
-
    struct userLockedInfo {
       uint256 amount;
       uint256 unlockedTime;
@@ -43,7 +41,6 @@ contract ERC20TimeLock is Ownable {
 
    function lock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) external {
       require(supportedToken[_token], "not supported token");
-      require(_unlockedTime > block.timestamp + minLockedTime, "unlocked time too small");
 
       IERC20 token = IERC20(_token);
 
@@ -101,10 +98,6 @@ contract ERC20TimeLock is Ownable {
       uli.amount = uli.amount.add(_amount);
 
       emit IncreaseLockedAmount(_user, address(uli.token), _idx, _amount);
-   }
-
-   function setNewMinLockedTime(uint256 _newMinLockedTime) external onlyOwner {
-      minLockedTime = _newMinLockedTime;
    }
 
    function withdraw(uint256 _idx) external {
