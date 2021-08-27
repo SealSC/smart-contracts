@@ -12,11 +12,16 @@ contract ERC20TimeLock is Ownable {
       uint256 amount;
       uint256 unlockedTime;
       IERC20 token;
-      bool withdrawn;
+      bool claimed;
    }
 
    mapping (address=>userLockedInfo[]) public lockList;
    mapping (address=>bool) public supportedToken;
+
+   modifier supported(address _token) {
+      require(supportedToken[_token], "not supported");
+      _;
+   }
 
    event SimpleLocked(address user, address token, uint256 amount, uint256 unlockedTime, uint256 idx);
    event LinearReleaseLocked(address user, address token, uint256 eachRelease, uint256 stageCount, uint256 startTime, uint256 interval, uint256 idx);
@@ -24,7 +29,7 @@ contract ERC20TimeLock is Ownable {
    event ReduceLockedAmount(address user,  address token, uint256 idx,uint256 amount);
    event SetNewUnlockedTime(address user,  uint256 idx, uint256 unlockedTime);
    event RemoveLockedInfo(address user, address token, uint256 idx, uint256 amount);
-   event Withdrawn(address user, address token, uint256 idx, uint256 amount);
+   event Claimed(address user, address token, uint256 idx, uint256 amount);
    event SupportedTokenAdded(address token);
    event SupportedTokenRemoved(address token);
 
@@ -33,8 +38,8 @@ contract ERC20TimeLock is Ownable {
    function removeUser(address _user, uint256 _idx) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
 
-      require(!uli.withdrawn, "token has been withdrawn");
-      uli.withdrawn = true;
+      require(!uli.claimed, "token has been claimed");
+      uli.claimed = true;
       uli.token.safeTransfer(msg.sender, uli.amount);
       emit RemoveLockedInfo(_user, address(uli.token), _idx, uli.amount);
       uli.amount = 0;
@@ -47,14 +52,13 @@ contract ERC20TimeLock is Ownable {
          amount: _amount,
          unlockedTime: _unlockedTime,
          token: _token,
-         withdrawn: false
+         claimed: false
       }));
 
       return uList.length;
    }
 
-   function simpleLock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) external {
-      require(supportedToken[_token], "not supported token");
+   function simpleLock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) supported(_token) external {
 
       IERC20 token = IERC20(_token);
       token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -69,8 +73,7 @@ contract ERC20TimeLock is Ownable {
       uint256 _stageCount,
       uint256 _startTime,
       uint256 _interval,
-      address _token) external {
-      require(supportedToken[_token], "not supported token");
+      address _token) supported(_token) external {
 
       uint256 totalAmount = _eachRelease.mul(_stageCount);
       IERC20 token = IERC20(_token);
@@ -112,7 +115,7 @@ contract ERC20TimeLock is Ownable {
 
    function reduceUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
-      require(!uli.withdrawn, "token has been withdrawn");
+      require(!uli.claimed, "token has been claimed");
 
       uli.token.safeTransfer(msg.sender, _amount);
       uli.amount = uli.amount.sub(_amount);
@@ -122,7 +125,7 @@ contract ERC20TimeLock is Ownable {
 
    function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
-      require(!uli.withdrawn, "token has been withdrawn");
+      require(!uli.claimed, "token has been claimed");
 
       uli.token.safeTransferFrom(msg.sender, address(this), _amount);
       uli.amount = uli.amount.add(_amount);
@@ -130,16 +133,16 @@ contract ERC20TimeLock is Ownable {
       emit IncreaseLockedAmount(_user, address(uli.token), _idx, _amount);
    }
 
-   function withdraw(uint256 _idx) external {
+   function claim(uint256 _idx) external {
       address user = msg.sender;
       userLockedInfo storage uli = _getUserLockedInfo(user, _idx);
 
-      require(!uli.withdrawn, "already withdrawn");
+      require(!uli.claimed, "already claimed");
       require(uli.unlockedTime < block.timestamp, "still locked");
 
-      uli.withdrawn = true;
+      uli.claimed = true;
       uli.token.safeTransfer(user, uli.amount);
-      emit Withdrawn(user, address(uli.token), _idx, uli.amount);
+      emit Claimed(user, address(uli.token), _idx, uli.amount);
       uli.amount = 0;
    }
 
