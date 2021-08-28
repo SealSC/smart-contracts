@@ -35,6 +35,13 @@ contract Cashier is RejectDirectETH {
         });
     }
 
+    function _changeBeneficiary(uint256 _category, address payable _newBeneficiary) internal {
+        require(_newBeneficiary != address(0), "beneficiary must not zero address");
+        require(supportedFee[_category].exists, "not supported fee");
+
+        supportedFee[_category].beneficiary = _newBeneficiary;
+    }
+
     function _removeFeeInfo(uint256 _category) internal {
         supportedFee[_category].exists = false;
         delete supportedFee[_category];
