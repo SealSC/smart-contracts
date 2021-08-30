@@ -2,9 +2,9 @@ pragma experimental ABIEncoderV2;
 pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
-import "../../contract-libs/open-zeppelin/Ownable.sol";
+import "../../contract-libs/seal-sc/Simple3Role.sol";
 
-contract ERC20TimeLock is Ownable {
+contract ERC20TimeLock is Simple3Role {
    using SafeERC20 for IERC20;
    using SafeMath for uint256;
 
@@ -33,7 +33,7 @@ contract ERC20TimeLock is Ownable {
    event SupportedTokenAdded(address token);
    event SupportedTokenRemoved(address token);
 
-   constructor(address _owner, address _initToken) public Ownable(_owner) {}
+   constructor(address _owner, address _initToken) public Simple3Role(_owner) {}
 
    function removeUser(address _user, uint256 _idx) external onlyOwner {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
@@ -106,14 +106,14 @@ contract ERC20TimeLock is Ownable {
       return ul[_idx];
    }
 
-   function setUserUnlockedTime(address _user, uint256 _idx, uint256 _newUnlockedTime) external onlyOwner {
+   function setUserUnlockedTime(address _user, uint256 _idx, uint256 _newUnlockedTime) external onlyAdmin {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       uli.unlockedTime = _newUnlockedTime;
 
       emit SetNewUnlockedTime(_user, _idx, _newUnlockedTime);
    }
 
-   function reduceUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
+   function reduceUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyAdmin {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       require(!uli.claimed, "token has been claimed");
 
@@ -123,7 +123,7 @@ contract ERC20TimeLock is Ownable {
       emit ReduceLockedAmount(_user, address(uli.token), _idx, _amount);
    }
 
-   function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyOwner {
+   function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyAdmin {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       require(!uli.claimed, "token has been claimed");
 
