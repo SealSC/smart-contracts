@@ -58,7 +58,7 @@ contract ERC20TimeLock is Simple3Role {
       return uList.length;
    }
 
-   function simpleLock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) supported(_token) external {
+   function commonLock(address _forUser, uint256 _amount, uint256 _unlockedTime, address _token) supported(_token) external {
 
       IERC20 token = IERC20(_token);
       token.safeTransferFrom(msg.sender, address(this), _amount);
