@@ -138,7 +138,7 @@ contract SealServiceAgent is Cashier, Simple3Role, SimpleSealSCSignature {
         bytes calldata _data) external returns(bytes memory serviceRet) {
 
         _prepareCall(_contract, _service, _category, _feeSupplier, _totalSupply);
-        serviceRet = _contract.functionCall(_data, "call service failed");
+        serviceRet = _contract.functionCall(abi.encodeWithSelector(_service, _data), "call service failed");
 
         return serviceRet;
     }
@@ -152,7 +152,7 @@ contract SealServiceAgent is Cashier, Simple3Role, SimpleSealSCSignature {
         bytes calldata _data) external payable returns(bytes memory serviceRet) {
 
         _prepareCall(_contract, _service, _category, _feeSupplier, _totalSupply);
-        serviceRet = _contract.functionCallWithValue(_data, msg.value, "call service failed");
+        serviceRet = _contract.functionCallWithValue(abi.encodeWithSelector(_service, _data), msg.value, "call service failed");
 
         return serviceRet;
     }
