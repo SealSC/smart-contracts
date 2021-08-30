@@ -92,18 +92,17 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         delete minters[_minter];
     }
 
-    function mint(address to, uint256 amount) public onlyMinter {
+    function mint(address _to, uint256 _amount) public onlyMinter {
         require(minable, "not minable");
         require(mintEnabled, "mint disabled");
-        require(to != ZERO_ADDRESS, "can not mint to address 0");
 
         MinterInfo memory minter = minters[msg.sender];
-        uint256 actualAmount = amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
+        uint256 actualAmount = _amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
 
         require(actualAmount >= minter.quota, "out of quota");
         minter.quota = minter.quota.sub(actualAmount);
 
-        emit MintTo(msg.sender, to, actualAmount);
-        _mint(to, actualAmount);
+        emit MintTo(msg.sender, _to, actualAmount);
+        _mint(_to, actualAmount);
     }
 }
