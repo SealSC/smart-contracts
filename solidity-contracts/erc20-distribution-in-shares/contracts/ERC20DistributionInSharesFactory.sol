@@ -11,12 +11,14 @@ contract ERC20DistributionInSharesFactory is Simple3Role, SimpleSealSCSignature 
     function deployEDIS(address _projectAdmin, address _accItem, bool _isPrivate) external onlyAdmin {
         ERC20DistributionInShares edisAddr = new ERC20DistributionInShares();
 
-        edisAddr.transferOwnership(owner());
         edisAddr.setPeriphery(_projectAdmin, _accItem);
 
         if(_isPrivate) {
             edisAddr.switchToPrivate();
         }
+
+        edisAddr.addAdministrator(msg.sender);
+        edisAddr.transferOwnership(owner());
 
         emit EDISCreated(address(edisAddr), _projectAdmin, _accItem, _isPrivate);
     }
