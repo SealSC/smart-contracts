@@ -99,7 +99,7 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         MinterInfo memory minter = minters[msg.sender];
         uint256 actualAmount = _amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
 
-        require(actualAmount >= minter.quota, "out of quota");
+        require(actualAmount <= minter.quota, "out of quota");
         minter.quota = minter.quota.sub(actualAmount);
 
         emit MintTo(msg.sender, _to, actualAmount);
