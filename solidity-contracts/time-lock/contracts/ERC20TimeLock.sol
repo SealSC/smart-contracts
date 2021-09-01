@@ -3,10 +3,13 @@ pragma solidity ^0.6.0;
 
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../../contract-libs/seal-sc/Simple3Role.sol";
+import "../../contract-libs/seal-sc/Utils.sol";
+import "../../contract-libs/open-zeppelin/ECDSA.sol";
 
 contract ERC20TimeLock is Simple3Role {
    using SafeERC20 for IERC20;
    using SafeMath for uint256;
+   using ECDSA for bytes32;
 
    struct userLockedInfo {
       uint256 amount;
@@ -15,8 +18,14 @@ contract ERC20TimeLock is Simple3Role {
       bool claimed;
    }
 
+   IERC20 public feeCurrency;
+   uint256 public feeAmount;
+   address public feeReceiver;
+
    mapping (address=>userLockedInfo[]) public lockList;
    mapping (address=>bool) public supportedToken;
+
+   mapping (address=>uint) public applicationNonce;
 
    modifier supported(address _token) {
       require(supportedToken[_token], "not supported");
@@ -89,9 +98,41 @@ contract ERC20TimeLock is Simple3Role {
       emit LinearReleaseLocked(_forUser, _token, _eachRelease, _stageCount, _startTime, _interval, idx);
    }
 
+   function addTokenByApplication(address _token, bytes calldata _sig) external {
+      if(supportedToken[_token]) {
+         return;
+      }
+
+      bytes32 signedHash = keccak256(
+         abi.encodePacked(
+            "\x19Ethereum Signed Message:\n109:",
+            SealUtils.toLowerCaseHex(_token),
+            SealUtils.toLowerCaseHex(applicationNonce[_token])
+         ));
+      address signer = signedHash.recover(_sig);
+
+      if(!administrator[signer]) {
+         revert("invalid signature");
+      }
+
+      supportedToken[_token] = true;
+      emit SupportedTokenAdded(_token);
+
+      if(feeReceiver != address(0)) {
+         feeCurrency.safeTransferFrom(msg.sender, feeReceiver, feeAmount);
+      }
+      applicationNonce[_token] = applicationNonce[_token].add(1);
+   }
+
    function addSupportedToken(address _token) external onlyOwner {
       supportedToken[_token] = true;
       emit SupportedTokenAdded(_token);
+   }
+
+   function setFeeConfig(address _currency, uint256 _amount, address _receiver) external onlyOwner {
+      feeCurrency = IERC20(_currency);
+      feeAmount = _amount;
+      feeReceiver = _receiver;
    }
 
    function removeSupportedToken(address _token) external onlyOwner {
@@ -106,7 +147,7 @@ contract ERC20TimeLock is Simple3Role {
       return ul[_idx];
    }
 
-   function setUserUnlockedTime(address _user, uint256 _idx, uint256 _newUnlockedTime) external onlyAdmin {
+   function setUserUnlockedTime(address _user, uint256 _idx, uint256 _newUnlockedTime) external onlyExecutor {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       uli.unlockedTime = _newUnlockedTime;
 
@@ -123,7 +164,7 @@ contract ERC20TimeLock is Simple3Role {
       emit ReduceLockedAmount(_user, address(uli.token), _idx, _amount);
    }
 
-   function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyAdmin {
+   function increaseUserUnlockAmount(address _user, uint256 _idx, uint256 _amount) external onlyExecutor {
       userLockedInfo storage uli = _getUserLockedInfo(_user, _idx);
       require(!uli.claimed, "token has been claimed");
 
