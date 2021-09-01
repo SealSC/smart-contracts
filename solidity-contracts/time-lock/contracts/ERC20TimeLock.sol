@@ -32,7 +32,7 @@ contract ERC20TimeLock is Simple3Role {
       _;
    }
 
-   event SimpleLocked(address user, address token, uint256 amount, uint256 unlockedTime, uint256 idx);
+   event CommonLocked(address user, address token, uint256 amount, uint256 unlockedTime, uint256 idx);
    event LinearReleaseLocked(address user, address token, uint256 eachRelease, uint256 stageCount, uint256 startTime, uint256 interval, uint256 idx);
    event IncreaseLockedAmount(address user, address token, uint256 idx,uint256 amount);
    event ReduceLockedAmount(address user,  address token, uint256 idx,uint256 amount);
@@ -73,7 +73,7 @@ contract ERC20TimeLock is Simple3Role {
       token.safeTransferFrom(msg.sender, address(this), _amount);
       uint256 idx = _lock(_forUser, _amount, _unlockedTime, token);
 
-      emit SimpleLocked(_forUser, _token, _amount, _unlockedTime, idx);
+      emit CommonLocked(_forUser, _token, _amount, _unlockedTime, idx);
    }
 
    function linearReleaseLock(
