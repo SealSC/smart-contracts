@@ -98,7 +98,7 @@ contract ERC20TimeLock is Simple3Role {
       emit LinearReleaseLocked(_forUser, _token, _eachRelease, _stageCount, _startTime, _interval, idx);
    }
 
-   function addTokenByApplication(address _token, bytes calldata _sig) external {
+   function addApprovedTokenSupport(address _token, bytes calldata _sig) external {
       if(supportedToken[_token]) {
          return;
       }
