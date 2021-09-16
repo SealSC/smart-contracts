@@ -6,7 +6,7 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "./SealNFTPeriphery.sol";
 
-contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
+contract SealNFT721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeMath for uint256;
 
     uint256 public nextSequenceID;
@@ -15,6 +15,7 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
 
     event Deployed(address nftContract, address theOwner, string nftName, string nftSymbol);
     event SequenceNFTMinted(address to, uint256 id);
+    event DirectNFTMinted(address to, bytes32 id);
     event MetaNFTMinted(address to, bytes32 metahash);
     event SignedMetaNFTMinted(address to, bytes32 metahash, bytes sig);
 
@@ -67,6 +68,11 @@ contract SealNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature 
         _mint(_to, uint256(_metadataHash));
 
         emit SignedMetaNFTMinted(_to, _metadataHash, _sig);
+    }
+
+    function mintDirect(address _to, uint256 _id) external onlyExecutor {
+        _mint(_to, _id);
+        emit DirectNFTMinted(_to, bytes32(_id));
     }
 
     function getSealNFTURI(uint256 _id) external view returns(string memory sealURI) {
