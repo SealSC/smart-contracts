@@ -63,7 +63,7 @@ contract SealOnchainIdxStore is ISealOnchainIdxStore, Cashier, Simple3Role, Simp
             return (false, false);
         }
 
-        super._chargeFeeByAmount(_feeCategory, _feeSupplier);
+        super._charge(_feeCategory, _feeSupplier, 0);
 
         return storeID(id, _key, _sig);
     }
@@ -89,7 +89,7 @@ contract SealOnchainIdxStore is ISealOnchainIdxStore, Cashier, Simple3Role, Simp
     }
 
     function setFeeInfo(uint256 _feeCategory, address _currency, uint256 _amount, address payable _beneficiary) external onlyAdmin {
-        super._setFeeInfo(_feeCategory, _currency, _amount, 0, _beneficiary);
+        super._setFeeInfo(_feeCategory, _currency, _amount, 0, _beneficiary, FEE_CHARGE_METHOD.ByAmount);
     }
 
     function removeFeeInfo(uint256 _feeCategory) external onlyAdmin {
