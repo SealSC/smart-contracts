@@ -20,13 +20,14 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
     struct MinterInfo {
         address minter;
         uint256 factor;
+        uint256 quota;
     }
 
-    event AddMinter(address minter, uint256 factor, uint256 block);
+    event AddMinter(address minter, uint256 factor, uint256 quota, uint256 block);
     event UpdateMinterFactor(address minter, uint256 factor, uint256 block);
-    event MinterRemoved(address minter, uint256 factor, uint256 block);
+    event UpdateMinterQuota(address minter, uint256 quota, uint256 block);
+    event MinterRemoved(address minter, uint256 block);
     event MintTo(address minter, address to, uint256 amount);
-    event FormulaChanged(address indexed from, address indexed to, address indexed byAdmin);
 
     mapping(address=>MinterInfo) public minters;
 
@@ -39,7 +40,7 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         mintEnabled = _enabled;
     }
 
-    function addMinter(address _minter, uint256 _factor) external onlyAdmin {
+    function addMinter(address _minter, uint256 _factor, uint256 _quota) external onlyAdmin {
         MinterInfo memory mi = minters[_minter];
         require(mi.minter ==  ZERO_ADDRESS, "minter already set");
 
@@ -50,9 +51,10 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
 
         mi.minter = _minter;
         mi.factor = minterFactor;
+        mi.quota = _quota;
         minters[_minter] = mi;
 
-        emit AddMinter(_minter, _factor, block.number);
+        emit AddMinter(_minter, _factor, _quota, block.number);
     }
 
     function updateMinterFactor(address[] calldata _minters, uint256[] calldata _factors) external onlyAdmin {
@@ -70,36 +72,37 @@ abstract contract ERC20Minable is ERC20, Constants, Simple3Role {
         }
     }
 
+    function setMinterQuota(address[] calldata _minters, uint256[] calldata _quotas) external onlyAdmin {
+        for(uint256 i=0; i<_minters.length; i++) {
+            MinterInfo storage mi = minters[_minters[i]];
+            if(mi.minter == ZERO_ADDRESS) {
+                continue;
+            }
+
+            mi.quota = _quotas[i];
+
+            emit UpdateMinterQuota(mi.minter, mi.quota, block.number);
+        }
+    }
+
     function removeMinter(address _minter) external onlyAdmin {
         MinterInfo memory mi = minters[_minter];
-        emit MinterRemoved(mi.minter, mi.factor, block.number);
+        emit MinterRemoved(mi.minter, block.number);
 
         delete minters[_minter];
     }
 
-    function setSupplyFormula(address _formula) external onlyAdmin {
-        require(_formula.isContract(), "formula must be a contract");
-
-        emit FormulaChanged(address(supplyFormula), _formula, msg.sender);
-        supplyFormula = ITokenSupplyFormula(_formula);
-    }
-
-    function mintWithFormula(address _to, uint256 _fromBlock, uint256 _toBlock, uint256 _base) external onlyMinter {
-        require(address(supplyFormula) != ZERO_ADDRESS, "formula not set");
-        (bool valid, uint256 amount) = supplyFormula.CalcSupply(_fromBlock, _toBlock, _base);
-        require(valid, "invalid param");
-
-        mint(_to, amount);
-    }
-
-    function mint(address to, uint256 amount) public onlyMinter {
+    function mint(address _to, uint256 _amount) public onlyMinter {
         require(minable, "not minable");
         require(mintEnabled, "mint disabled");
-        require(to != ZERO_ADDRESS, "can not mint to address 0");
 
         MinterInfo memory minter = minters[msg.sender];
-        uint256 actualAmount = amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
-        emit MintTo(msg.sender, to, actualAmount);
-        _mint(to, actualAmount);
+        uint256 actualAmount = _amount.percentageMul(minter.factor, BASIS_POINT_PRECISION);
+
+        require(actualAmount <= minter.quota, "out of quota");
+        minter.quota = minter.quota.sub(actualAmount);
+
+        emit MintTo(msg.sender, _to, actualAmount);
+        _mint(_to, actualAmount);
     }
 }

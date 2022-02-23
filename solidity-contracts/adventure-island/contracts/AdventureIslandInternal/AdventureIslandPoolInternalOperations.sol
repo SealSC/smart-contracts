@@ -5,7 +5,6 @@ pragma solidity ^0.6.0;
 import "../../../contract-libs/open-zeppelin/SafeMath.sol";
 import "../AdventureIslandData/AdventureIslandData.sol";
 import "./AdventureIslandStakingOperations.sol";
-//import "../AdventureIslandAdmin/AdventureIslandAdmin.sol";
 
 contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperations {
     using SafeMath for uint256;
@@ -15,7 +14,7 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
     }
 
     function _poolsTotalWeight() internal view returns(uint256) {
-        uint256 poolCnt = validPoolList.length;
+        uint256 poolCnt = allPoolsCount;
         uint256 totalWeight = 0;
 
         if(!_poolsEnabled()) {
@@ -23,7 +22,11 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
         }
 
         for(uint256 i=0; i<poolCnt; i++) {
-            PoolInfo memory pool = validPoolList[i];
+            if(!validPoolList[i]) {
+                continue;
+            }
+
+            PoolInfo memory pool = allPools[i];
             if(pool.closed) {
                 continue;
             }
@@ -187,13 +190,16 @@ contract AdventureIslandPoolInternalOperations is AdventureIslandStakingOperatio
     }
 
     function _updatePools() internal {
-        uint256 poolLen = validPoolList.length;
         if(block.number < globalStartBlock) {
             return;
         }
 
-        for(uint256 i=0; i<poolLen; i++) {
-            PoolInfo storage pool = validPoolList[i];
+        for(uint256 i=0; i<allPoolsCount; i++) {
+            if(!validPoolList[i]) {
+                continue;
+            }
+
+            PoolInfo storage pool = allPools[i];
             if(pool.closed || block.number < pool.startBlock) {
                 continue;
             }

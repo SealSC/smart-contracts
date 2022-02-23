@@ -7,7 +7,6 @@ import "../../../contract-libs/open-zeppelin/Address.sol";
 import "../../../contract-libs/open-zeppelin/SafeERC20.sol";
 import "../AdventureIslandData/AdventureIslandData.sol";
 import "../../../contract-libs/seal-sc/Calculation.sol";
-import "./AdventureIslandPoolInternalOperations.sol";
 
 contract AdventureIslandStakingOperations is AdventureIslandData {
     using SafeMath for uint256;

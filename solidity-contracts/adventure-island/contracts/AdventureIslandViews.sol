@@ -5,23 +5,30 @@ pragma solidity ^0.6.0;
 import "./AdventureIslandInternal/AdventureIslandInternal.sol";
 
 contract AdventureIslandViews is AdventureIslandInternal {
-    function poolsCount() external view returns(uint256) {
-        return validPoolList.length;
+    function poolsCount() external view returns(uint256 counts) {
+        counts = 0;
+        for(uint256 i=0; i<allPoolsCount; i++) {
+            if(!validPoolList[i]) {
+                continue;
+            }
+            counts = counts + 1;
+        }
+        return counts;
     }
 
-    function poolsEnabled() external view returns(bool) {
+    function poolsEnabled() external view returns(bool enabled) {
         return _poolsEnabled();
     }
 
-    function getToBeCollectListOf(address user) public view
+    function toBeCollectListOf(address user) public view
         returns(uint256[] memory userReward,
                 uint256[] memory poolReward,
                 uint256[] memory userStaked,
                 uint256[] memory poolStaked) {
-        uint256[] memory userReward = new uint256[](allPoolsCount);
-        uint256[] memory poolReward = new uint256[](allPoolsCount);
-        uint256[] memory userStaked = new uint256[](allPoolsCount);
-        uint256[] memory poolStaked = new uint256[](allPoolsCount);
+        userReward = new uint256[](allPoolsCount);
+        poolReward = new uint256[](allPoolsCount);
+        userStaked = new uint256[](allPoolsCount);
+        poolStaked = new uint256[](allPoolsCount);
 
         for(uint256 i=0; i<allPoolsCount; i++) {
             (userReward[i], poolReward[i], userStaked[i], poolStaked[i]) = toBeCollectedOf(i, user);
@@ -29,7 +36,7 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return (userReward, poolReward, userStaked, poolStaked);
     }
 
-    function poolWeight(uint256 _pid) external view returns(uint256) {
+    function poolWeight(uint256 _pid) external view returns(uint256 weight) {
         PoolInfo storage pool = allPools[_pid];
         if(pool.closed) {
             return 0;
@@ -38,7 +45,7 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return pool.weight.mul(COMMON_PRECISION).div(_poolsTotalWeight());
     }
 
-    function toBeCollectedOfPool(uint256 _pid) public view returns(uint256){
+    function toBeCollectedOfPool(uint256 _pid) public view returns(uint256 collectedAmount){
         PoolInfo storage pool = allPools[_pid];
         if(pool.billingCycle == 0) {
             return 0;
@@ -51,7 +58,8 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return _toBeCollected(pool, pool.lastRewardBlock, block.number);
     }
 
-    function toBeCollectedOf(uint256 _pid, address _user) public view returns(uint256, uint256, uint256, uint256) {
+    function toBeCollectedOf(uint256 _pid, address _user) public view
+        returns(uint256 userWillCollect, uint256 poolTotal, uint256 userStaked, uint256 poolStaked) {
         PoolInfo storage pool = allPools[_pid];
         UserInfo storage user = users[_pid][_user];
 
@@ -82,20 +90,28 @@ contract AdventureIslandViews is AdventureIslandInternal {
         return (userReward, poolToBeCollect, user.stakeIn, pool.staked);
     }
 
-    function getPoolStakingToken(uint256 _pid) external view returns(address) {
+    function getPoolStakingToken(uint256 _pid) external view returns(address stakingToken) {
         return address(allPools[_pid].stakingToken);
     }
 
-    function getStakedInfoOf(address userAddr) external view returns(address[] memory, uint256[] memory, uint256[] memory, uint256[] memory,  uint256[] memory,  uint256[] memory) {
-        address[] memory stakeTokenList = new address[](allPoolsCount);
-        uint256[] memory stakeTokenTotalSupply = new uint256[](allPoolsCount);
+    function getStakedInfoOf(address userAddr) external view
+        returns(
+            address[] memory stakeTokenList,
+            uint256[] memory stakeTokenTotalSupply,
+            uint256[] memory userReward,
+            uint256[] memory poolReward,
+            uint256[] memory userStaked,
+            uint256[] memory poolStaked) {
 
-        uint256[] memory userStaked = new uint256[](allPoolsCount);
-        uint256[] memory userReward = new uint256[](allPoolsCount);
-        uint256[] memory poolStaked = new uint256[](allPoolsCount);
-        uint256[] memory poolReward = new uint256[](allPoolsCount);
+        stakeTokenList = new address[](allPoolsCount);
+        stakeTokenTotalSupply = new uint256[](allPoolsCount);
 
-        (userReward, poolReward, userStaked, poolStaked) = getToBeCollectListOf(userAddr);
+        userStaked = new uint256[](allPoolsCount);
+        userReward = new uint256[](allPoolsCount);
+        poolStaked = new uint256[](allPoolsCount);
+        poolReward = new uint256[](allPoolsCount);
+
+        (userReward, poolReward, userStaked, poolStaked) = toBeCollectListOf(userAddr);
 
         for(uint256 i=0; i<allPoolsCount; i++) {
             PoolInfo memory p = allPools[i];
