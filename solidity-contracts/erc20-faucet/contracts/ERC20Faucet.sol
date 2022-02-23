@@ -5,9 +5,9 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 import "../../contract-libs/open-zeppelin/SafeERC20.sol";
-import "../../contract-libs/seal-sc/ERC20TransferOut.sol";
+import "../../contract-libs/seal-sc/TokenTransferOut.sol";
 
-contract ERC20Faucet is ERC20TransferOut, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
+contract ERC20Faucet is Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -54,7 +54,7 @@ contract ERC20Faucet is ERC20TransferOut, Simple3Role, RejectDirectETH, SimpleSe
     }
 
     function transferOutERC20(IERC20 _token, address _to) external onlyOwner {
-        _transferERC20Out(_token, _to);
+        TokenTransferOut.transferOutERC20(_token, _to, _token.balanceOf(address(this)));
     }
 
     function claim(address _receiver) external {
