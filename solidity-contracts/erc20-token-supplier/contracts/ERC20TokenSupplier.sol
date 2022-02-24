@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.4;
 
 import "../../contract-libs/open-zeppelin/Ownable.sol";
 import "../../contract-libs/open-zeppelin/SafeMath.sol";
