@@ -24,9 +24,9 @@ constructor(
 
 #### :point_right: addToken
 该方法仅admin权限调用   
-、、、
+```
 function addToken(address _token,uint256 _amount ) external onlyAdmin
-、、、
+```
 
 ##### 描述
 > 该方法为添加水龙头支持的token，在领取时依次发放
@@ -40,9 +40,9 @@ function addToken(address _token,uint256 _amount ) external onlyAdmin
 
 #### :point_right: setInterval
 该方法仅admin权限调用      
-、、、
+```
 function setInterval(uint256 _interval) external onlyAdmin
-、、、
+```
 
 ##### 描述
 > 该方法为设置用户两次领取token的最小间隔时长
@@ -53,9 +53,9 @@ function setInterval(uint256 _interval) external onlyAdmin
 
 #### :point_right: setTokenAmount
 该方法仅admin权限调用   
-、、、
+```
 function setTokenAmount(uint256 _idx, uint256 _amount) external onlyAdmin
-、、、
+```
 
 ##### 描述
 > 该方法为设置水龙头中已添加token的单次发放数额
@@ -69,18 +69,18 @@ function setTokenAmount(uint256 _idx, uint256 _amount) external onlyAdmin
 
 #### :point_right: clear
 该方法仅admin权限调用   
-、、、
+```
 function clear() external onlyAdmin
-、、、
+```
 
 ##### 描述
 > 该方法为清空水龙头，将水龙头中所有可领取的token转回给Owner
 
 #### :point_right: transferOutERC20
 该方法仅Owner权限调用      
-、、、
+```
 function transferOutERC20(IERC20 _token, address _to) external onlyOwner
-、、、
+```
 
 ##### 描述
 > 该方法为转出水龙头合约中的任意ERC20 Token到指定地址，该方法主要用于token误转入的取出操作
@@ -94,9 +94,9 @@ function transferOutERC20(IERC20 _token, address _to) external onlyOwner
 
 #### :point_right: claim
 该方法无权限设置，都可调用   
-、、、
+```
 function claim(address _receiver) external
-、、、
+```
 
 ##### 描述
 > 该方法为领取水龙头中的token到指定账户地址
@@ -109,9 +109,9 @@ function claim(address _receiver) external
 
 #### :point_right: getSettings
 该方法无权限配置   
-、、、
+```
 function getSettings() external view returns(IERC20[] memory token, uint256[] memory amount, uint256 interval)
-、、、
+```
 
 ##### 描述
 该方法为读取水龙头中的设置参数
@@ -128,9 +128,9 @@ function getSettings() external view returns(IERC20[] memory token, uint256[] me
 
 #### :point_right: validUser
 该方法无权限配置   
-、、、
+```
 function validUser(address _user) public view returns(bool valid)
-、、、
+```
 
 ##### 描述
 > 该方法为查询指定用户是否可领取token
