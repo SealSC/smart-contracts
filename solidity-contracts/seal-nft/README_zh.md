@@ -2,7 +2,7 @@
 
 # Summary概括
 
-该合约是一本符合ERC 720标准的合约，提供简洁的三角色管理，并提供带有Seal签名的NFT Token铸造能力。
+该合约是一本符合ERC 721标准的合约，提供简洁的三角色管理，并提供带有Seal签名的NFT Token铸造能力。
 
 # Constructor
 ```
