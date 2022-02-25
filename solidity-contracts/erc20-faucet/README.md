@@ -1,3 +1,3 @@
 # ERC20-Faucet
 
-中文 * [README](./README_zh.md)
+中文 :point_right: [README](./README_zh.md)
