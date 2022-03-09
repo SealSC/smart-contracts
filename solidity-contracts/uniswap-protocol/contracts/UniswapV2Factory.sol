@@ -36,7 +36,9 @@ contract UniswapV2Factory is ApprovedTokenList {
         bytes memory bytecode = type(UniswapV2Pair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
 
-        require(listedPair(salt), "not listed");
+        if(pairListControlEnable) {
+            require(listedPair(salt), "not listed");
+        }
 
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
