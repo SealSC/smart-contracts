@@ -12,6 +12,18 @@ import "./LiquidityMiningViews.sol";
 contract LiquidityMining is Simple3Role, LiquidityMiningInternal, LiquidityMiningViews {
     using SafeMath for uint256;
 
+    bool public proxyMode;
+    address public stakingProxy;
+
+    modifier proxyCheck() {
+        if(!proxyMode) {
+            _;
+        } else {
+            require(msg.sender == stakingProxy, "not from proxy");
+            _;
+        }
+    }
+
     constructor(
         address _owner,
         address _rewardToken,
@@ -28,21 +40,28 @@ contract LiquidityMining is Simple3Role, LiquidityMiningInternal, LiquidityMinin
         selfAddr = address(this);
     }
 
-    function stake(uint256 _pid, uint256 _amount) external {
+    function setProxyMode(bool _enable, address _proxy) external onlyAdmin {
+        proxyMode = _enable;
+        stakingProxy = _proxy;
+    }
 
+    function stake(uint256 _pid, uint256 _amount) external proxyCheck {
         _stake(_pid, _amount, msg.sender, msg.sender);
     }
 
-    function stakeForUser(uint256 _pid, uint256 _amount, address _user) external {
+    function stakeForUser(uint256 _pid, uint256 _amount, address _user) external proxyCheck {
+        if(proxyMode) {
+            revert("stakeForUser not support proxy mode!");
+        }
         _stake(_pid, _amount, _user, msg.sender);
     }
 
-    function withdraw(uint256 _pid, uint256 _amount) external {
+    function withdraw(uint256 _pid, uint256 _amount) external proxyCheck {
         _collect(_pid, msg.sender);
         _withdraw(_pid, msg.sender, _amount);
     }
 
-    function collect(uint256 _pid) external {
+    function collect(uint256 _pid) external proxyCheck {
         _collect(_pid, msg.sender);
     }
 
