@@ -12,7 +12,7 @@ contract LiquidityMiningInternal is LiquidityMiningCalculator {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    function _collect(uint256 _pid, address _user) internal {
+    function _collect(uint256 _pid, address _user) internal returns(uint256) {
         UserInfo storage user = users[_pid][_user];
         PoolInfo storage pool = poolList[_pid];
 
@@ -20,7 +20,7 @@ contract LiquidityMiningInternal is LiquidityMiningCalculator {
 
         uint256 amount = _rewardOf(pool, _user);
         if(amount == 0) {
-            return;
+            return 0;
         }
 
         user.willCollect = 0;
@@ -28,6 +28,8 @@ contract LiquidityMiningInternal is LiquidityMiningCalculator {
         user.lastCollectPosition = block.number;
 
         mainRewardToken.mint(_user, amount);
+
+        return amount;
     }
 
     function _withdraw(uint256 _pid, address _user, uint256 _amount) internal {

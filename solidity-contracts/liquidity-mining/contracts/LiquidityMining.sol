@@ -66,13 +66,15 @@ contract LiquidityMining is Simple3Role, LiquidityMiningInternal, LiquidityMinin
         _stake(_pid, _amount, _user, msg.sender);
     }
 
-    function withdraw(uint256 _pid, uint256 _amount) external proxyCheck {
-        _collect(_pid, msg.sender);
+    function withdraw(uint256 _pid, uint256 _amount) external proxyCheck returns(uint256 reward) {
+        reward = _collect(_pid, msg.sender);
         _withdraw(_pid, msg.sender, _amount);
+
+        return reward;
     }
 
-    function collect(uint256 _pid) external proxyCheck {
-        _collect(_pid, msg.sender);
+    function collect(uint256 _pid) external proxyCheck returns(uint256 reward) {
+        return _collect(_pid, msg.sender);
     }
 
     function addPool(
