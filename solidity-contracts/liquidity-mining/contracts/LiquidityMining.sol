@@ -13,13 +13,13 @@ contract LiquidityMining is Simple3Role, LiquidityMiningInternal, LiquidityMinin
     using SafeMath for uint256;
 
     bool public proxyMode;
-    address public stakingProxy;
+    mapping(address=>bool) public stakingProxy;
 
     modifier proxyCheck() {
         if(!proxyMode) {
             _;
         } else {
-            require(msg.sender == stakingProxy, "not from proxy");
+            require(stakingProxy[msg.sender], "not from proxy");
             _;
         }
     }
@@ -40,13 +40,23 @@ contract LiquidityMining is Simple3Role, LiquidityMiningInternal, LiquidityMinin
         selfAddr = address(this);
     }
 
-    function setProxyMode(bool _enable, address _proxy) external onlyAdmin {
+    function setProxyMode(bool _enable) external onlyAdmin {
         proxyMode = _enable;
-        stakingProxy = _proxy;
+    }
+
+    function setProxy(address _proxy, bool _enable) external onlyAdmin {
+        stakingProxy[_proxy] = _enable;
     }
 
     function stake(uint256 _pid, uint256 _amount) external proxyCheck {
         _stake(_pid, _amount, msg.sender, msg.sender);
+    }
+
+    function proxyStaking(uint256 _pid, uint256 _amount, address _user) external proxyCheck {
+        if(!proxyMode) {
+            revert("only valid in proxy mode");
+        }
+        _stake(_pid, _amount, msg.sender, _user);
     }
 
     function stakeForUser(uint256 _pid, uint256 _amount, address _user) external proxyCheck {
