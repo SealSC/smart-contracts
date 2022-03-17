@@ -40,4 +40,8 @@ contract LiquidityMiningViews is LiquidityMiningCalculator {
 
         return amounts;
     }
+
+    function rewardToken() external view returns(address token) {
+        return address(mainRewardToken);
+    }
 }
