@@ -6,6 +6,11 @@ import "../open-zeppelin/ERC721/IERC721.sol";
 
 library TokenTransferOut {
     using SafeERC20 for IERC20;
+    using Address for address payable;
+
+    function transferOutETH(uint256 _amount, address payable _to) internal {
+        _to.sendValue(_amount);
+    }
 
     function transferOutERC20(IERC20 _token, address _to, uint256 _amount) internal {
         _token.safeTransfer(_to, _amount);
