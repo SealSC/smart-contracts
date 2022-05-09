@@ -202,7 +202,7 @@ event UnLockToken(uint256 _id);
 event TransferToken(address from, address to, uint256 tokenId);
 ```
 ##### 描述
-> 讲指定token转出的合约事件
+> 将指定token转出的合约事件
 
 ##### 参数
 **_from**

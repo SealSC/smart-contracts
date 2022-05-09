@@ -7,7 +7,7 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
-contract TestNFT is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
+contract SealNFTStandard721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeMath for uint256;
     using Address for address payable;
     mapping (uint256=>bool) public lockTokenList;
