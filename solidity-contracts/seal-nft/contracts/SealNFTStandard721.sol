@@ -66,7 +66,7 @@ contract SealNFTStandard721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealS
 
     event TransferToken(address from, address to, uint256 tokenId);
     function _transfer(address from, address to, uint256 tokenId) internal override virtual {
-        require(!lockTokenList[_id], "token is locked");
+        require(!lockTokenList[tokenId], "token is locked");
         super._transfer(from, to, tokenId);
         emit TransferToken(from, to, tokenId);
     }
