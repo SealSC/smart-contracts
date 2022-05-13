@@ -5,6 +5,7 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/TokenTransferOut.sol";
 import "../../contract-libs/open-zeppelin/ERC1155/ERC1155Receiver.sol";
 import "../../contract-libs/open-zeppelin/ECDSA.sol";
+import "../../contract-libs/open-zeppelin/ERC721/ERC721Holder.sol";
 
 contract SealNFT1155Receiver is ERC1155Receiver {
     bytes4 private constant _INTERFACE_ID_ERC1155 = 0xd9b67a26;
@@ -38,7 +39,7 @@ contract SealNFT1155Receiver is ERC1155Receiver {
     }
 }
 
-contract TokenHolder is SealNFT1155Receiver, Simple3Role, SimpleSealSCSignature {
+contract TokenHolder is ERC721Holder, SealNFT1155Receiver, Simple3Role, SimpleSealSCSignature {
     using Address for address payable;
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
