@@ -111,6 +111,26 @@ function unlockToken(uint256 _id) external onlyOwner;
 > uint256类型，解锁被锁定的token的id
 
 
+#### :point_right: transfer
+该方法仅Owner权限调用   
+```
+function transfer(address from, address to, uint256 tokenId) external onlyOwner {
+```
+##### 描述
+> 该方法为将指定token进行转移
+
+##### 参数
+**_from**
+> address类型，被转移账户的账户地址
+
+**_to**
+> address类型，接收者的账户地址
+
+**_from**
+> uint256类型，指定token的id
+
+
+
 ## 合约事件
 
 #### :point_right: BaseURISet
