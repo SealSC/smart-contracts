@@ -112,9 +112,9 @@ function unlockToken(uint256 _id) external onlyOwner;
 
 
 #### :point_right: transfer
-该方法仅Owner权限调用   
+该方法仅token所有者权限调用   
 ```
-function transfer(address from, address to, uint256 tokenId) external onlyOwner {
+function transfer(address from, address to, uint256 tokenId) external isTokenOwner(tokenId) {
 ```
 ##### 描述
 > 该方法为将指定token进行转移
