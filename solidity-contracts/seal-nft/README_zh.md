@@ -10,7 +10,8 @@ constructor(
     address _owner,
     string memory _name,
     string memory _symbol,
-    bool _enablelockToken
+    bool _enablelockToken,
+    string memory _uri
 )
 
 ```
@@ -23,6 +24,7 @@ constructor(
 | _name  | string | 设置合约名称. |
 | _symbol  | string | 设置合约的符号. |
 | _enablelockToken  | boole | 设置是否开启锁定Token. |
+| _uri  | string | 设置基础的URI. |
 
 
 ## 合约调用接口
