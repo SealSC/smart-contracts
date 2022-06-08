@@ -10,7 +10,8 @@ constructor(
     address _owner,
     string memory _name,
     string memory _symbol,
-    bool _enablelockToken
+    bool _enablelockToken,
+    string memory _uri
 )
 
 ```
@@ -23,6 +24,7 @@ constructor(
 | _name  | string | 设置合约名称. |
 | _symbol  | string | 设置合约的符号. |
 | _enablelockToken  | boole | 设置是否开启锁定Token. |
+| _uri  | string | 设置基础的URI. |
 
 
 ## 合约调用接口
@@ -109,6 +111,26 @@ function unlockToken(uint256 _id) external onlyOwner;
 ##### 参数
 **_id**
 > uint256类型，解锁被锁定的token的id
+
+
+#### :point_right: transfer
+该方法仅token所有者权限调用   
+```
+function transfer(address from, address to, uint256 tokenId) external isTokenOwner(tokenId) {
+```
+##### 描述
+> 该方法为将指定token进行转移
+
+##### 参数
+**_from**
+> address类型，被转移账户的账户地址
+
+**_to**
+> address类型，接收者的账户地址
+
+**_from**
+> uint256类型，指定token的id
+
 
 
 ## 合约事件

@@ -12,13 +12,20 @@ contract SealNFTStandard721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealS
     using Address for address payable;
     mapping (uint256=>bool) public lockTokenList;
     bool public lockTokenEnabled;
+    string public addr;
+    string public baseuri;
 
     constructor(
         address _owner,
         string memory _name,
         string memory _symbol,
-        bool _enablelockToken) public Simple3Role(_owner) ERC721(_name, _symbol) {
+        bool _enablelockToken,
+        string memory _uri
+        ) public Simple3Role(_owner) ERC721(_name, _symbol) {
            lockTokenEnabled = _enablelockToken;
+           addr = addressToString(address(this));
+           baseuri = string(abi.encodePacked(_uri, addr,'/'));
+            _setBaseURI(baseuri);
         }
      
     modifier isTokenOwner(uint256 _id) {
@@ -65,9 +72,22 @@ contract SealNFTStandard721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealS
     }
 
     event TransferToken(address from, address to, uint256 tokenId);
-    function _transfer(address from, address to, uint256 tokenId) internal override virtual {
+    function transfer(address from, address to, uint256 tokenId) external isTokenOwner(tokenId) {
         require(!lockTokenList[tokenId], "token is locked");
         super._transfer(from, to, tokenId);
         emit TransferToken(from, to, tokenId);
+    }
+
+    function addressToString(address _addr) public pure returns(string memory) {
+        bytes32 value = bytes32(uint256(_addr));
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(51);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint(uint8(value[i + 12] >> 4))];
+            str[3+i*2] = alphabet[uint(uint8(value[i + 12] & 0x0f))];
+        }
+        return string(str);
     }
 }
