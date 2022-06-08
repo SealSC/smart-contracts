@@ -44,7 +44,7 @@ contract TokenHolder is ERC721Holder, SealNFT1155Receiver, Simple3Role, SimpleSe
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
 
-    constructor(address _owner) public Simple3Role(_owner) {}
+    constructor() public Simple3Role(msg.sender) {}
 
     function transferOutETH(address payable _to, uint256 _amount) external onlyAdmin {
         _to.sendValue(_amount);
