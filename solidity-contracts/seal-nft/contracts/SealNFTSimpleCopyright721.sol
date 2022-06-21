@@ -7,16 +7,13 @@ import "../../contract-libs/seal-sc/Simple3Role.sol";
 import "../../contract-libs/seal-sc/SimpleSealSCSignature.sol";
 import "../../contract-libs/seal-sc/RejectDirectETH.sol";
 
-contract SealNFTCommon721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
+contract SealNFTSimpleCopyright721 is ERC721, Simple3Role, RejectDirectETH, SimpleSealSCSignature {
     using SafeMath for uint256;
     using Address for address payable;
 
     address public priorityReceiver = address(0);
 
-    constructor(
-        address _owner,
-        string memory _name,
-        string memory _symbol) public Simple3Role(_owner) ERC721(_name, _symbol) {}
+    constructor() public Simple3Role(msg.sender) ERC721("TEST", "TEST") {}
 
     function setPriorityReceiver(address _r) external onlyOwner {
         priorityReceiver = _r;
